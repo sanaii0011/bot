@@ -31,9 +31,9 @@ from telegram import (
     Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update,
     ReplyKeyboardMarkup, KeyboardButton, InputFile
 )
-from telegram.ext import (
-    Application, CallbackQueryHandler, CommandHandler,
-    ContextTypes, ConversationHandler, MessageHandler, filters,
+from telegram import (
+    Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update,
+    ReplyKeyboardMarkup, KeyboardButton, InputFile, WebAppInfo
 )
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -377,7 +377,8 @@ async def db_export_csv(user_id: int) -> str:
 def main_reply_keyboard() -> ReplyKeyboardMarkup:
     kb = [
         [KeyboardButton("➕ افزودن کار جدید"), KeyboardButton("⚡ ثبت سریع کار")],
-        [KeyboardButton("📋 کارهای فعال من"), KeyboardButton("🍅 پومودورو تمرکز")],
+        # لینک وب‌اپ به دکمه کارهای فعال من متصل شد:
+        [KeyboardButton("📋 کارهای فعال من", web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/")), KeyboardButton("🍅 پومودورو تمرکز")],
         [KeyboardButton("🌱 ردیاب عادت‌ها"), KeyboardButton("📐 ماتریس آیزنهاور")],
         [KeyboardButton("📝 دفترچه یادداشت Notion"), KeyboardButton("🏆 پروفایل & مدال‌ها")],
         [KeyboardButton("📊 گزارش CSV"), KeyboardButton("✅ کارهای انجام‌شده")]
@@ -1021,8 +1022,15 @@ async def cb_del_task(update: Update, _: ContextTypes.DEFAULT_TYPE):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 async def post_init(application: Application):
+    # تنظیم دکمه آبی‌رنگ منو برای باز کردن وب‌اپ
+    await application.bot.set_chat_menu_button(
+        menu_button=MenuButtonWebApp(
+            text="تودولیست",
+            web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/")
+        )
+    )
+    # شروع زمان‌بندی یادآورها (کد قبلی خودتان)
     start_scheduler(application.bot)
-
 
 def main():
     asyncio.run(init_db())
