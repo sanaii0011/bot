@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>تودولیست من</title>
+  <title>کارهای فعال من - تودولیست</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
   <style>
     body {
@@ -19,17 +19,24 @@
       padding-bottom: 12px;
       border-bottom: 2px solid var(--tg-theme-secondary-bg-color, #eee);
     }
-    .card {
+    .task-card {
       background-color: var(--tg-theme-secondary-bg-color, #f5f5f5);
       border-radius: 12px;
       padding: 14px;
       margin-top: 12px;
       box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .task-title {
       font-weight: bold;
-      font-size: 1.1em;
-      color: var(--tg-theme-button-color, #2481cc);
+      font-size: 1.05em;
+    }
+    .empty-state {
+      text-align: center;
+      margin-top: 50px;
+      color: var(--tg-theme-hint-color, #888);
     }
   </style>
 </head>
@@ -37,14 +44,11 @@
 
   <div class="header">
     <h2>📋 کارهای فعال من</h2>
-    <p id="user-greeting">در حال دریافت اطلاعات...</p>
+    <p id="user-greeting">در حال بارگذاری...</p>
   </div>
 
-  <div id="tasks-list">
-    <div class="card">
-      <div class="task-title">💡 وضعیت سیستم</div>
-      <p>وب‌اپ تودولیست شما با موفقیت به تلگرام متصل شد.</p>
-    </div>
+  <div id="tasks-container">
+    <div class="empty-state">در حال دریافت لیست کارها...</div>
   </div>
 
   <script>
@@ -53,10 +57,25 @@
     tg.expand();
 
     const user = tg.initDataUnsafe?.user;
+
     if (user) {
       document.getElementById('user-greeting').innerText = `سلام ${user.first_name} عزیز 👋`;
+      
+      // در اینجا وب‌اپ آماده اتصال به سرور پایتون شماست
+      // فعلاً برای تست ظاهر کارها، این نمونه نمایش داده می‌شود:
+      setTimeout(() => {
+        document.getElementById('tasks-container').innerHTML = `
+          <div class="task-card">
+            <div class="task-title">📌 نمونه کار ثبت شده</div>
+          </div>
+        `;
+      }, 500);
+
     } else {
       document.getElementById('user-greeting').innerText = `لطفاً وب‌اپ را از داخل تلگرام باز کنید.`;
+      document.getElementById('tasks-container').innerHTML = `
+        <div class="empty-state">⚠️ دسترسی مستقیم به وب‌اپ امکان‌پذیر نیست. لطفاً از داخل ربات تلگرام اقدام کنید.</div>
+      `;
     }
   </script>
 </body>
