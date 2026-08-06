@@ -29,11 +29,12 @@ import aiosqlite
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram import (
     Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update,
-    ReplyKeyboardMarkup, KeyboardButton, InputFile
+    ReplyKeyboardMarkup, KeyboardButton, InputFile, WebAppInfo,
+    MenuButtonWebApp
 )
-from telegram import (
-    Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update,
-    ReplyKeyboardMarkup, KeyboardButton, InputFile, WebAppInfo
+from telegram.ext import (
+    Application, CommandHandler, MessageHandler, CallbackQueryHandler,
+    ConversationHandler, filters, ContextTypes
 )
 
 # ═══════════════════════════════════════════════════════════════════════════════
