@@ -28,7 +28,7 @@
       text-align: center;
       padding-bottom: 16px;
       margin-bottom: 16px;
-      border-bottom: 1px solid var(--hint-color);
+      border-bottom: 1px solid rgba(0,0,0,0.1);
     }
 
     .header h2 {
@@ -76,6 +76,7 @@
       color: var(--hint-color);
       display: flex;
       gap: 12px;
+      flex-wrap: wrap;
     }
 
     /* حالت لودینگ و حالت خالی */
@@ -100,13 +101,13 @@
       100% { transform: rotate(360deg); }
     }
 
-    /* دکمه رفرش یا عملیات سریع */
+    /* دکمه به‌روزرسانی */
     .action-btn {
       background-color: var(--button-color);
       color: var(--button-text);
       border: none;
       border-radius: 10px;
-      padding: 10px 16px;
+      padding: 12px 16px;
       font-size: 0.95em;
       font-weight: 600;
       width: 100%;
@@ -133,43 +134,50 @@
   <button class="action-btn" onclick="loadTasks()">🔄 به‌روزرسانی لیست</button>
 
   <script>
+    // 🔗 آدرس سرور رندر خودتان را در متغیر زیر جایگزین کنید:
+    const RENDER_SERVER_URL = "https://your-bot-name.onrender.com"; 
+
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 
-    // دریافت اطلاعات کاربر
+    // دریافت اطلاعات کاربر تلگرام
     const user = tg.initDataUnsafe?.user;
     const userName = user ? user.first_name : "کاربر عزیز";
     const userId = user ? user.id : null;
 
     document.getElementById('user-greeting').innerText = `سلام ${userName} 👋`;
 
-    // تابع اصلی برای بارگذاری کارها
+    // تابع دریافت کارهای زنده از سرور Render
     async function loadTasks() {
       const container = document.getElementById('tasks-container');
       
-      // نمایش حالت لودینگ
       container.innerHTML = `
         <div class="state-box">
           <div class="spinner"></div>
-          <p>در حال بارگذاری کارها...</p>
+          <p>در حال بارگذاری کارهای زنده شما...</p>
         </div>
       `;
 
+      if (!userId) {
+        container.innerHTML = `
+          <div class="state-box">
+            <p style="color: #ff9800;">⚠️ شناسه کاربر یافت نشد. لطفاً وب‌اپ را درون تلگرام باز کنید.</p>
+          </div>
+        `;
+        return;
+      }
+
       try {
-        // اینجا در مراحل بعدی آدرس سرور Render خودتان را قرار خواهید داد
-        // مثلاً: const response = await fetch(`https://your-app.onrender.com/api/tasks?user_id=${userId}`);
-        // const tasks = await response.json();
-
-        // فعلاً برای تست ظاهر خفن کد، چند نمونه کار شبیه‌سازی شده نمایش می‌دهیم:
-        await new Promise(resolve => setTimeout(resolve, 800)); // شبیه‌سازی تاخیر شبکه
+        const response = await fetch(`${RENDER_SERVER_URL}/api/tasks?user_id=${userId}`);
         
-        const mockTasks = [
-          { id: 1, title: "🚀 تکمیل پروژه وب‌اپ تلگرام", category: "شخصی", priority: "زیاد" },
-          { id: 2, title: "📚 مطالعه مستندات پایتون و ربات", category: "تحصیلی", priority: "متوسط" }
-        ];
+        if (!response.ok) {
+          throw new Error(`خطای سرور: ${response.status}`);
+        }
 
-        if (mockTasks.length === 0) {
+        const data = await response.json();
+
+        if (data.status !== "success" || !data.tasks || data.tasks.length === 0) {
           container.innerHTML = `
             <div class="state-box">
               <p>🎉 هیچ کار فعالی در لیست شما نیست!</p>
@@ -178,17 +186,21 @@
           return;
         }
 
-        // رندر کردن کارت‌ها روی صفحه
+        const priMap = { "High": "🚨 ضروری", "Medium": "🟡 معمولی", "Low": "🟢 کم‌اهمیت" };
+        const catMap = { "Personal": "👤 شخصی", "Work": "💼 کاری", "Study": "📚 تحصیلی" };
+
         let htmlContent = '';
-        mockTasks.forEach(task => {
+        data.tasks.forEach(task => {
           htmlContent += `
             <div class="task-card">
               <div class="task-header">
                 <span class="task-title">🔹 ${task.title}</span>
               </div>
+              ${task.description ? `<p style="margin: 4px 0; font-size: 0.9em; color: var(--hint-color);">${task.description}</p>` : ''}
               <div class="task-meta">
-                <span>📁 دسته: ${task.category}</span>
-                <span>⭐ اولویت: ${task.priority}</span>
+                <span>📁 ${catMap[task.category] || task.category}</span>
+                <span>⭐ ${priMap[task.priority] || task.priority}</span>
+                ${task.due_date ? `<span>⏰ ${task.due_date}</span>` : ''}
               </div>
             </div>
           `;
@@ -197,15 +209,16 @@
         container.innerHTML = htmlContent;
 
       } catch (error) {
+        console.error(error);
         container.innerHTML = `
           <div class="state-box">
-            <p style="color: #ff5252;">⚠️ خطا در دریافت اطلاعات از سرور.</p>
+            <p style="color: #ff5252;">⚠️ خطا در دریافت اطلاعات از سرور Render.</p>
           </div>
         `;
       }
     }
 
-    // اجرای اولیه بارگذاری کارها هنگام باز شدن صفحه
+    // اجرای اولیه بارگذاری
     loadTasks();
   </script>
 </body>
