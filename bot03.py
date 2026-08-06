@@ -1026,7 +1026,7 @@ async def post_init(application: Application):
     # تنظیم دکمه آبی‌رنگ منو برای باز کردن وب‌اپ
     await application.bot.set_chat_menu_button(
         menu_button=MenuButtonWebApp(
-            text="تودولیست",
+            text="todo-list",
             web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/")
         )
     )
