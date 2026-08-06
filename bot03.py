@@ -378,11 +378,12 @@ async def db_export_csv(user_id: int) -> str:
 def main_reply_keyboard() -> ReplyKeyboardMarkup:
     kb = [
         [KeyboardButton("➕ افزودن کار جدید"), KeyboardButton("⚡ ثبت سریع کار")],
-        # لینک وب‌اپ به دکمه کارهای فعال من متصل شد:
-        [KeyboardButton("📋 کارهای فعال من", web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/")), KeyboardButton("🍅 پومودورو تمرکز")],
-        [KeyboardButton("🌱 ردیاب عادت‌ها"), KeyboardButton("📐 ماتریس آیزنهاور")],
-        [KeyboardButton("📝 دفترچه یادداشت Notion"), KeyboardButton("🏆 پروفایل & مدال‌ها")],
-        [KeyboardButton("📊 گزارش CSV"), KeyboardButton("✅ کارهای انجام‌شده")]
+        # دکمه اول پیامک متنی می‌فرستد، دکمه دوم وب‌اپ را باز می‌کند
+        [KeyboardButton("📋 کارهای فعال من"), KeyboardButton("🌐 وب‌اپ کارهای من", web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/"))],
+        [KeyboardButton("🍅 پومودورو تمرکز"), KeyboardButton("🌱 ردیاب عادت‌ها")],
+        [KeyboardButton("📐 ماتریس آیزنهاور"), KeyboardButton("📝 دفترچه یادداشت Notion")],
+        [KeyboardButton("🏆 پروفایل & مدال‌ها"), KeyboardButton("📊 گزارش CSV")],
+        [KeyboardButton("✅ کارهای انجام‌شده")]
     ]
     return ReplyKeyboardMarkup(kb, resize_keyboard=True)
 
@@ -565,10 +566,30 @@ async def cmd_list(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     tasks = await db_get_tasks(uid)
 
     if not tasks:
-        await update.message.reply_text("🎉 <b>هیچ کار فعالی در لیست شما نیست!</b>", parse_mode="HTML", reply_markup=main_reply_keyboard())
+        # ساخت دکمه وب‌اپ حتی زمانی که کاری وجود ندارد
+        no_task_kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🌐 باز کردن وب‌اپ تودولیست", web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/"))]
+        ])
+        await update.message.reply_text(
+            "🎉 <b>هیچ کار فعالی در لیست شما نیست!</b>", 
+            parse_mode="HTML", 
+            reply_markup=no_task_kb
+        )
         return
 
-    await update.message.reply_text("📋 <b>لیست کارهای فعال شما:</b>", parse_mode="HTML")
+    # ساخت دکمه شیشه‌ای وب‌اپ برای پیام تیتر
+    webapp_inline_kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🌐 مشاهده گرافیکی در وب‌اپ", web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/"))]
+    ])
+
+    # ارسال تیتر به همراه دکمه وب‌اپ
+    await update.message.reply_text(
+        "📋 <b>لیست کارهای فعال شما:</b>", 
+        parse_mode="HTML",
+        reply_markup=webapp_inline_kb
+    )
+
+    # ارسال تک تک کارها با دکمه‌های عملیاتی خودشان
     for t in tasks:
         subs = await db_get_subtasks(t["id"])
         await update.message.reply_text(
@@ -576,7 +597,6 @@ async def cmd_list(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
             parse_mode="HTML",
             reply_markup=task_action_kb(t["id"], subs)
         )
-
 
 async def cmd_done_list(update: Update, _: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
