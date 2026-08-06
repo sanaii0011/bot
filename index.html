@@ -2,9 +2,10 @@
 <html lang="fa" dir="rtl">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>کارهای فعال من - تودولیست</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>مدیریت پیشرفته کارها</title>
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
       --bg-color: var(--tg-theme-bg-color, #f4f6f8);
@@ -13,226 +14,298 @@
       --button-color: var(--tg-theme-button-color, #2481cc);
       --button-text: var(--tg-theme-button-text-color, #ffffff);
       --hint-color: var(--tg-theme-hint-color, #999999);
+      --danger: #ff5252;
+      --success: #4caf50;
+      --warning: #ff9800;
+    }
+
+    /* استایل تم سفارشی - کاربر میتواند رنگها را عوض کند */
+    body.custom-theme {
+      --bg-color: #2b2b2b;
+      --text-color: #f1f1f1;
+      --card-bg: #3a3a3a;
+      --button-color: #00bcd4;
+      --hint-color: #bbbbbb;
     }
 
     body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      font-family: 'Segoe UI', Tahoma, sans-serif;
       background-color: var(--bg-color);
       color: var(--text-color);
-      margin: 0;
-      padding: 16px;
-      direction: rtl;
+      margin: 0; padding: 16px; direction: rtl;
+      transition: background-color 0.3s, color 0.3s;
     }
 
-    .header {
-      text-align: center;
-      padding-bottom: 16px;
-      margin-bottom: 16px;
-      border-bottom: 1px solid rgba(0,0,0,0.1);
-    }
-
-    .header h2 {
-      margin: 0 0 6px 0;
-      font-size: 1.4em;
-    }
-
-    .header p {
-      margin: 0;
-      font-size: 0.95em;
-      color: var(--hint-color);
-    }
+    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(128,128,128,0.2); padding-bottom: 10px;}
+    .top-bar h2 { margin: 0; font-size: 1.3em; }
+    .theme-btn { background: none; border: none; font-size: 1.2em; color: var(--text-color); cursor: pointer; }
 
     .task-card {
-      background-color: var(--card-bg);
-      border-radius: 14px;
-      padding: 16px;
-      margin-bottom: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.04);
-      transition: transform 0.2s ease;
-      display: flex;
-      flex-direction: column;
-      gap: 8px;
-      border-right: 4px solid var(--button-color);
+      background-color: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); position: relative;
+    }
+    
+    .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;}
+    .task-title { font-weight: bold; font-size: 1.1em; }
+    .task-desc { font-size: 0.9em; color: var(--hint-color); margin-bottom: 12px; line-height: 1.4;}
+    
+    .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px;}
+    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75em; background: rgba(128,128,128,0.1); }
+    .badge.high { border-right: 3px solid var(--danger); }
+    .badge.med { border-right: 3px solid var(--warning); }
+    .badge.low { border-right: 3px solid var(--success); }
+
+    .card-actions { display: flex; gap: 8px; justify-content: flex-end;}
+    .btn-icon {
+      background: none; border: none; padding: 8px; border-radius: 8px; cursor: pointer;
+      font-size: 1.1em; transition: 0.2s; background: rgba(128,128,128,0.1); color: var(--text-color);
+    }
+    .btn-icon.done { color: var(--success); }
+    .btn-icon.del { color: var(--danger); }
+    .btn-icon:active { transform: scale(0.9); }
+
+    .fab {
+      position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px;
+      background-color: var(--button-color); color: var(--button-text);
+      border-radius: 50%; display: flex; justify-content: center; align-items: center;
+      font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; border: none;
+      z-index: 100;
     }
 
-    .task-card:active {
-      transform: scale(0.98);
+    /* Modal Form */
+    .modal-overlay {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5);
+      display: none; justify-content: center; align-items: center; z-index: 1000;
     }
+    .modal {
+      background: var(--card-bg); width: 90%; max-width: 400px; border-radius: 16px; padding: 20px;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .modal h3 { margin-top: 0; }
+    .form-group { margin-bottom: 15px; }
+    .form-group label { display: block; margin-bottom: 5px; font-size: 0.9em; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--hint-color);
+      background: transparent; color: var(--text-color); box-sizing: border-box; font-family: inherit;
+    }
+    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
+    .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
+    .btn-primary { background: var(--button-color); color: var(--button-text); }
+    .btn-cancel { background: rgba(128,128,128,0.2); color: var(--text-color); }
 
-    .task-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .task-title {
-      font-weight: 700;
-      font-size: 1.1em;
-    }
-
-    .task-meta {
-      font-size: 0.85em;
-      color: var(--hint-color);
-      display: flex;
-      gap: 12px;
-      flex-wrap: wrap;
-    }
-
-    .state-box {
-      text-align: center;
-      margin-top: 50px;
-      color: var(--hint-color);
-    }
-
-    .spinner {
-      width: 35px;
-      height: 35px;
-      border: 3px solid var(--hint-color);
-      border-top: 3px solid var(--button-color);
-      border-radius: 50%;
-      animation: spin 0.8s linear infinite;
-      margin: 0 auto 15px auto;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-
-    .action-btn {
-      background-color: var(--button-color);
-      color: var(--button-text);
-      border: none;
-      border-radius: 10px;
-      padding: 12px 16px;
-      font-size: 0.95em;
-      font-weight: 600;
-      width: 100%;
-      cursor: pointer;
-      margin-top: 15px;
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
+    .loader { text-align: center; color: var(--hint-color); margin-top: 40px; }
   </style>
 </head>
 <body>
 
-  <div class="header">
-    <h2>📋 کارهای فعال من</h2>
-    <p id="user-greeting">در حال اتصال به تلگرام...</p>
+  <div class="top-bar">
+    <div>
+      <h2 id="greeting">کارهای من</h2>
+      <span style="font-size: 0.8em; color: var(--hint-color);">مدیریت زنده و مستقیم</span>
+    </div>
+    <button class="theme-btn" onclick="toggleTheme()"><i class="fas fa-palette"></i></button>
   </div>
 
   <div id="tasks-container">
-    <div class="state-box">
-      <div class="spinner"></div>
-      <p>در حال دریافت اطلاعات از دیتابیس...</p>
+    <div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>در حال ارتباط با سرور...</div>
+  </div>
+
+  <!-- دکمه شناور افزودن کار -->
+  <button class="fab" onclick="openModal('add')"><i class="fas fa-plus"></i></button>
+
+  <!-- مدال (پاپ‌آپ) افزودن و ویرایش تسک -->
+  <div class="modal-overlay" id="taskModal">
+    <div class="modal">
+      <h3 id="modalTitle">➕ افزودن کار جدید</h3>
+      <input type="hidden" id="taskId">
+      
+      <div class="form-group">
+        <label>عنوان کار *</label>
+        <input type="text" id="tTitle" placeholder="مثلا: خرید کتاب...">
+      </div>
+      
+      <div class="form-group">
+        <label>توضیحات (اختیاری)</label>
+        <textarea id="tDesc" rows="2" placeholder="جزئیات بیشتر..."></textarea>
+      </div>
+
+      <div style="display: flex; gap: 10px;">
+        <div class="form-group" style="flex: 1;">
+          <label>دسته‌بندی</label>
+          <select id="tCat">
+            <option value="Personal">👤 شخصی</option>
+            <option value="Work">💼 کاری</option>
+            <option value="Study">📚 تحصیلی</option>
+          </select>
+        </div>
+        <div class="form-group" style="flex: 1;">
+          <label>اولویت</label>
+          <select id="tPri">
+            <option value="High">🚨 ضروری</option>
+            <option value="Medium" selected>🟡 معمولی</option>
+            <option value="Low">🟢 کم</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="modal-actions">
+        <button class="btn btn-cancel" onclick="closeModal()">انصراف</button>
+        <button class="btn btn-primary" onclick="saveTask()">💾 ذخیره</button>
+      </div>
     </div>
   </div>
 
-  <button class="action-btn" onclick="loadTasks()">🔄 به‌روزرسانی لیست</button>
-
   <script>
-    const RENDER_SERVER_URL = "https://bot-kqte.onrender.com"; 
-
+    // 🔗 آدرس سرور رندر ربات خود را اینجا بگذارید
+    const API_BASE = "https://bot-kqte.onrender.com/api/tasks"; 
+    
     const tg = window.Telegram.WebApp;
-    tg.ready();
-    tg.expand();
-
-    // استخراج هوشمند اطلاعات کاربر (پشتیبانی مجزا از initData و initDataUnsafe)
-    let userId = null;
-    let userName = "کاربر عزیز";
-
-    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
-      userId = tg.initDataUnsafe.user.id;
-      userName = tg.initDataUnsafe.user.first_name || "کاربر عزیز";
-    } else if (tg.initData) {
-      try {
-        const urlParams = new URLSearchParams(tg.initData);
-        const userStr = urlParams.get('user');
-        if (userStr) {
-          const userObj = JSON.parse(decodeURIComponent(userStr));
-          userId = userObj.id;
-          userName = userObj.first_name || "کاربر عزیز";
-        }
-      } catch (e) {
-        console.error("خطا در خواندن initData:", e);
-      }
+    tg.ready(); tg.expand();
+    const userId = tg.initDataUnsafe?.user?.id || 123456789; // Fallback for testing out of telegram
+    
+    if(tg.initDataUnsafe?.user) {
+      document.getElementById('greeting').innerText = `کارهای ${tg.initDataUnsafe.user.first_name}`;
     }
 
-    document.getElementById('user-greeting').innerText = `سلام ${userName} 👋`;
+    // شخصی سازی تم
+    function toggleTheme() {
+      document.body.classList.toggle('custom-theme');
+      tg.HapticFeedback.impactOccurred('light');
+    }
 
-    async function loadTasks() {
+    // بارگذاری لیست کارها از دیتابیس ربات
+    async function fetchTasks() {
       const container = document.getElementById('tasks-container');
-      
-      container.innerHTML = `
-        <div class="state-box">
-          <div class="spinner"></div>
-          <p>در حال بارگذاری کارهای زنده شما...</p>
-        </div>
-      `;
-
-      if (!userId) {
-        container.innerHTML = `
-          <div class="state-box">
-            <p style="color: #ff9800; font-size: 0.95em; line-height: 1.6;">
-              ⚠️ شناسه کاربر از طرف تلگرام دریافت نشد.<br>
-              لطفاً وب‌اپ را درون <b>گوشی موبایل</b> تست کنید یا ربات را یک‌بار Restart کنید.
-            </p>
-          </div>
-        `;
-        return;
-      }
-
       try {
-        const response = await fetch(`${RENDER_SERVER_URL}/api/tasks?user_id=${userId}`);
+        const res = await fetch(`${API_BASE}?user_id=${userId}`);
+        const data = await res.json();
         
-        if (!response.ok) {
-          throw new Error(`خطای سرور: ${response.status}`);
-        }
-
-        const data = await response.json();
-
-        if (data.status !== "success" || !data.tasks || data.tasks.length === 0) {
-          container.innerHTML = `
-            <div class="state-box">
-              <p>🎉 هیچ کار فعالی در لیست شما نیست!</p>
-            </div>
-          `;
+        if (!data.tasks || data.tasks.length === 0) {
+          container.innerHTML = '<div class="loader">🎉 شما هیچ کار فعالی ندارید!</div>';
           return;
         }
 
-        const priMap = { "High": "🚨 ضروری", "Medium": "🟡 معمولی", "Low": "🟢 کم‌اهمیت" };
-        const catMap = { "Personal": "👤 شخصی", "Work": "💼 کاری", "Study": "📚 تحصیلی" };
-
-        let htmlContent = '';
-        data.tasks.forEach(task => {
-          htmlContent += `
-            <div class="task-card">
-              <div class="task-header">
-                <span class="task-title">🔹 ${task.title}</span>
-              </div>
-              ${task.description ? `<p style="margin: 4px 0; font-size: 0.9em; color: var(--hint-color);">${task.description}</p>` : ''}
-              <div class="task-meta">
-                <span>📁 ${catMap[task.category] || task.category}</span>
-                <span>⭐ ${priMap[task.priority] || task.priority}</span>
-                ${task.due_date ? `<span>⏰ ${task.due_date}</span>` : ''}
-              </div>
-            </div>
-          `;
-        });
-
-        container.innerHTML = htmlContent;
-
-      } catch (error) {
-        console.error(error);
-        container.innerHTML = `
-          <div class="state-box">
-            <p style="color: #ff5252;">⚠️ خطا در دریافت اطلاعات از سرور Render.</p>
-          </div>
-        `;
+        renderTasks(data.tasks);
+      } catch (err) {
+        container.innerHTML = '<div class="loader" style="color:var(--danger);">⚠️ خطا در ارتباط با سرور</div>';
       }
     }
 
-    loadTasks();
+    function renderTasks(tasks) {
+      const container = document.getElementById('tasks-container');
+      const catMap = { "Personal": "شخصی", "Work": "کاری", "Study": "تحصیلی" };
+      const priClass = { "High": "high", "Medium": "med", "Low": "low" };
+
+      let html = '';
+      tasks.forEach(t => {
+        // Encode object to string for the edit button
+        const taskJson = encodeURIComponent(JSON.stringify(t));
+        
+        html += `
+          <div class="task-card" id="task-${t.id}">
+            <div class="task-header">
+              <span class="task-title">${t.title}</span>
+            </div>
+            ${t.description ? `<div class="task-desc">${t.description}</div>` : ''}
+            
+            <div class="badges">
+              <span class="badge">📁 ${catMap[t.category] || t.category}</span>
+              <span class="badge ${priClass[t.priority]}">اولویت: ${t.priority}</span>
+            </div>
+            
+            <div class="card-actions">
+              <button class="btn-icon done" onclick="markDone(${t.id})" title="انجام شد"><i class="fas fa-check-circle"></i></button>
+              <button class="btn-icon" onclick="openModal('edit', '${taskJson}')" title="ویرایش"><i class="fas fa-pen"></i></button>
+              <button class="btn-icon del" onclick="deleteTask(${t.id})" title="حذف"><i class="fas fa-trash"></i></button>
+            </div>
+          </div>
+        `;
+      });
+      container.innerHTML = html;
+    }
+
+    // عملیات دکمه‌ها
+    async function markDone(id) {
+      tg.HapticFeedback.notificationOccurred('success');
+      document.getElementById(`task-${id}`).style.opacity = '0.5';
+      await fetch(`${API_BASE}/${id}/done`, { method: 'POST' });
+      fetchTasks();
+    }
+
+    async function deleteTask(id) {
+      if(!confirm("آیا از حذف این کار مطمئن هستید؟")) return;
+      tg.HapticFeedback.impactOccurred('heavy');
+      await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+      fetchTasks();
+    }
+
+    // مدیریت مدال (پاپ‌آپ)
+    function openModal(mode, taskJsonStr = null) {
+      tg.HapticFeedback.impactOccurred('light');
+      const modal = document.getElementById('taskModal');
+      
+      if (mode === 'add') {
+        document.getElementById('modalTitle').innerText = '➕ افزودن کار جدید';
+        document.getElementById('taskId').value = '';
+        document.getElementById('tTitle').value = '';
+        document.getElementById('tDesc').value = '';
+        document.getElementById('tCat').value = 'Personal';
+        document.getElementById('tPri').value = 'Medium';
+      } else if (mode === 'edit') {
+        const t = JSON.parse(decodeURIComponent(taskJsonStr));
+        document.getElementById('modalTitle').innerText = '✏️ ویرایش کار';
+        document.getElementById('taskId').value = t.id;
+        document.getElementById('tTitle').value = t.title;
+        document.getElementById('tDesc').value = t.description || '';
+        document.getElementById('tCat').value = t.category;
+        document.getElementById('tPri').value = t.priority;
+      }
+      
+      modal.style.display = 'flex';
+    }
+
+    function closeModal() {
+      document.getElementById('taskModal').style.display = 'none';
+    }
+
+    async function saveTask() {
+      const id = document.getElementById('taskId').value;
+      const payload = {
+        user_id: userId,
+        title: document.getElementById('tTitle').value,
+        description: document.getElementById('tDesc').value,
+        category: document.getElementById('tCat').value,
+        priority: document.getElementById('tPri').value
+      };
+
+      if(!payload.title) {
+        tg.showAlert("لطفاً عنوان کار را وارد کنید!");
+        return;
+      }
+
+      tg.HapticFeedback.notificationOccurred('success');
+      closeModal();
+      document.getElementById('tasks-container').innerHTML = '<div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i><br>در حال ذخیره...</div>';
+
+      if (id) {
+        // ویرایش
+        await fetch(`${API_BASE}/${id}`, {
+          method: 'PUT', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+      } else {
+        // افزودن جدید
+        await fetch(API_BASE, {
+          method: 'POST', headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify(payload)
+        });
+      }
+      
+      fetchTasks();
+    }
+
+    // لود اولیه
+    fetchTasks();
   </script>
 </body>
 </html>
