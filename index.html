@@ -42,7 +42,6 @@
       color: var(--hint-color);
     }
 
-    /* استایل کارت‌های وظایف */
     .task-card {
       background-color: var(--card-bg);
       border-radius: 14px;
@@ -79,7 +78,6 @@
       flex-wrap: wrap;
     }
 
-    /* حالت لودینگ و حالت خالی */
     .state-box {
       text-align: center;
       margin-top: 50px;
@@ -101,7 +99,6 @@
       100% { transform: rotate(360deg); }
     }
 
-    /* دکمه به‌روزرسانی */
     .action-btn {
       background-color: var(--button-color);
       color: var(--button-text);
@@ -134,21 +131,35 @@
   <button class="action-btn" onclick="loadTasks()">🔄 به‌روزرسانی لیست</button>
 
   <script>
-    // 🔗 آدرس سرور رندر خودتان را در متغیر زیر جایگزین کنید:
     const RENDER_SERVER_URL = "https://bot-kqte.onrender.com"; 
 
     const tg = window.Telegram.WebApp;
     tg.ready();
     tg.expand();
 
-    // دریافت اطلاعات کاربر تلگرام
-    const user = tg.initDataUnsafe?.user;
-    const userName = user ? user.first_name : "کاربر عزیز";
-    const userId = user ? user.id : null;
+    // استخراج هوشمند اطلاعات کاربر (پشتیبانی مجزا از initData و initDataUnsafe)
+    let userId = null;
+    let userName = "کاربر عزیز";
+
+    if (tg.initDataUnsafe && tg.initDataUnsafe.user) {
+      userId = tg.initDataUnsafe.user.id;
+      userName = tg.initDataUnsafe.user.first_name || "کاربر عزیز";
+    } else if (tg.initData) {
+      try {
+        const urlParams = new URLSearchParams(tg.initData);
+        const userStr = urlParams.get('user');
+        if (userStr) {
+          const userObj = JSON.parse(decodeURIComponent(userStr));
+          userId = userObj.id;
+          userName = userObj.first_name || "کاربر عزیز";
+        }
+      } catch (e) {
+        console.error("خطا در خواندن initData:", e);
+      }
+    }
 
     document.getElementById('user-greeting').innerText = `سلام ${userName} 👋`;
 
-    // تابع دریافت کارهای زنده از سرور Render
     async function loadTasks() {
       const container = document.getElementById('tasks-container');
       
@@ -162,7 +173,10 @@
       if (!userId) {
         container.innerHTML = `
           <div class="state-box">
-            <p style="color: #ff9800;">⚠️ شناسه کاربر یافت نشد. لطفاً وب‌اپ را درون تلگرام باز کنید.</p>
+            <p style="color: #ff9800; font-size: 0.95em; line-height: 1.6;">
+              ⚠️ شناسه کاربر از طرف تلگرام دریافت نشد.<br>
+              لطفاً وب‌اپ را درون <b>گوشی موبایل</b> تست کنید یا ربات را یک‌بار Restart کنید.
+            </p>
           </div>
         `;
         return;
@@ -218,7 +232,6 @@
       }
     }
 
-    // اجرای اولیه بارگذاری
     loadTasks();
   </script>
 </body>
