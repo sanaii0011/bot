@@ -1,31 +1,21 @@
 """
-🚀 ULTIMATE ENTERPRISE TASK & PRODUCTIVITY BOT (bot03.py)
-=========================================================
-کامل‌ترین و بی‌نقص‌ترین ربات مدیریت وظایف، پومودورو، عادت‌ها و یادداشت‌ها
-پشتیبانی از:
-- Todoist Quick Add (NLP)
-- Eisenhower Matrix (ماتریس آیزنهاور)
-- Pomodoro Focus Timer (تکنیک پومودورو)
-- Habit Tracker & Streak System (ردیاب عادت‌ها)
-- Subtasks / Checklist (زیرکارها)
-- Notion Quick Notes (دفترچه یادداشت)
-- Gamification & Badges (گیمیفیکیشن و مدال‌ها)
-- Background Task Scheduler (یادآوری دقیق)
-- CSV Backup / Export (خروجی اکسل)
-
-پیش‌نیازها:
-pip install python-telegram-bot[job-queue] apscheduler aiosqlite
+🚀 ULTIMATE ENTERPRISE TASK & PRODUCTIVITY BOT + WEB API (bot03.py)
+===================================================================
+ربات کامل مدیریت وظایف، پومودورو، عادت‌ها، یادداشت‌ها + وب‌سرور داخلی API جهت اتصال به WebApp
 """
 
 import asyncio
 import csv
 import io
 import logging
+import os
 import re
 from datetime import datetime, timedelta
 from typing import Optional
 
 import aiosqlite
+from aiohttp import web
+import aiohttp_cors
 from apscheduler.schedulers.asyncio import AsyncIOScheduler
 from telegram import (
     Bot, InlineKeyboardButton, InlineKeyboardMarkup, Update,
@@ -41,7 +31,7 @@ from telegram.ext import (
 # CONFIG & LOGGING
 # ═══════════════════════════════════════════════════════════════════════════════
 
-BOT_TOKEN = "8322904493:AAFMyY-sB__S8s3f5DiTfaq6jm5lbrydH34"
+BOT_TOKEN = os.environ.get("BOT_TOKEN", "8322904493:AAFMyY-sB__S8s3f5DiTfaq6jm5lbrydH34")
 DB_PATH   = "ultimate_productivity.db"
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(name)s: %(message)s", level=logging.INFO)
@@ -378,7 +368,6 @@ async def db_export_csv(user_id: int) -> str:
 def main_reply_keyboard() -> ReplyKeyboardMarkup:
     kb = [
         [KeyboardButton("➕ افزودن کار جدید"), KeyboardButton("⚡ ثبت سریع کار")],
-        # دکمه اول پیامک متنی می‌فرستد، دکمه دوم وب‌اپ را باز می‌کند
         [KeyboardButton("📋 کارهای فعال من"), KeyboardButton("🌐 وب‌اپ کارهای من", web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/"))],
         [KeyboardButton("🍅 پومودورو تمرکز"), KeyboardButton("🌱 ردیاب عادت‌ها")],
         [KeyboardButton("📐 ماتریس آیزنهاور"), KeyboardButton("📝 دفترچه یادداشت Notion")],
@@ -433,7 +422,6 @@ def task_action_kb(task_id: int, subtasks: list[dict] = []) -> InlineKeyboardMar
         ]
     ]
 
-    # اگر زیرکار وجود داشت، دکمه‌های تغییر وضعیت زیرکار اضافه شوند
     for st in subtasks:
         icon = "✅" if st["is_done"] else "▫️"
         buttons.append([InlineKeyboardButton(f"{icon} {st['title']}", callback_data=f"toggle_sub:{st['id']}:{task_id}")])
@@ -566,7 +554,6 @@ async def cmd_list(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     tasks = await db_get_tasks(uid)
 
     if not tasks:
-        # ساخت دکمه وب‌اپ حتی زمانی که کاری وجود ندارد
         no_task_kb = InlineKeyboardMarkup([
             [InlineKeyboardButton("🌐 باز کردن وب‌اپ تودولیست", web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/"))]
         ])
@@ -577,19 +564,16 @@ async def cmd_list(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         )
         return
 
-    # ساخت دکمه شیشه‌ای وب‌اپ برای پیام تیتر
     webapp_inline_kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("🌐 مشاهده گرافیکی در وب‌اپ", web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/"))]
     ])
 
-    # ارسال تیتر به همراه دکمه وب‌اپ
     await update.message.reply_text(
         "📋 <b>لیست کارهای فعال شما:</b>", 
         parse_mode="HTML",
         reply_markup=webapp_inline_kb
     )
 
-    # ارسال تک تک کارها با دکمه‌های عملیاتی خودشان
     for t in tasks:
         subs = await db_get_subtasks(t["id"])
         await update.message.reply_text(
@@ -813,7 +797,6 @@ async def cb_pomo_start(update: Update, _: ContextTypes.DEFAULT_TYPE):
         parse_mode="HTML"
     )
 
-    # برای نمونه آزمایشی ۵ ثانیه متوقف می‌شود (در حالت واقعی ۲۵ دقیقه)
     await asyncio.sleep(5)
     await db_increment_pomo(tid)
     await db_add_xp(update.effective_user.id, 25)
@@ -1039,25 +1022,65 @@ async def cb_del_task(update: Update, _: ContextTypes.DEFAULT_TYPE):
     await q.delete_message()
 
 # ═══════════════════════════════════════════════════════════════════════════════
+# WEB API FOR TELEGRAM WEB APP
+# ═══════════════════════════════════════════════════════════════════════════════
+
+async def handle_get_tasks(request):
+    """ارسال لیست کارهای یک کاربر به وب‌اپ با فرمت JSON"""
+    user_id = request.query.get("user_id")
+    if not user_id:
+        return web.json_response({"error": "user_id is required"}, status=400)
+    
+    try:
+        user_id = int(user_id)
+        tasks = await db_get_tasks(user_id)
+        return web.json_response({"status": "success", "tasks": tasks})
+    except Exception as e:
+        log.error(f"API Error: {e}")
+        return web.json_response({"error": str(e)}, status=500)
+
+async def start_web_server():
+    """شروع سرور وب روی پورت Render"""
+    app = web.Application()
+    
+    # تنظیم CORS جهت مجوزدهی به مرورگر
+    cors = aiohttp_cors.setup(app, defaults={
+        "*": aiohttp_cors.ResourceOptions(
+            allow_credentials=True,
+            expose_headers="*",
+            allow_headers="*",
+        )
+    })
+
+    resource = app.router.add_resource("/api/tasks")
+    route = resource.add_route("GET", handle_get_tasks)
+    cors.add(route)
+
+    port = int(os.environ.get("PORT", 8080))
+    runner = web.AppRunner(app)
+    await runner.setup()
+    site = web.TCPSite(runner, "0.0.0.0", port)
+    await site.start()
+    log.info(f"Web API Server running on port {port} 🌐")
+
+# ═══════════════════════════════════════════════════════════════════════════════
 # MAIN ENGINE & APPLICATION SETUP
 # ═══════════════════════════════════════════════════════════════════════════════
 
 async def post_init(application: Application):
-    # تنظیم دکمه آبی‌رنگ منو برای باز کردن وب‌اپ
     await application.bot.set_chat_menu_button(
         menu_button=MenuButtonWebApp(
             text="todo-list",
             web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/")
         )
     )
-    # شروع زمان‌بندی یادآورها (کد قبلی خودتان)
     start_scheduler(application.bot)
 
-def main():
-    asyncio.run(init_db())
+async def main_async():
+    await init_db()
     app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
-    # Conversation: Add Task (Step-by-Step)
+    # Conversation Handlers
     add_conv = ConversationHandler(
         entry_points=[
             CommandHandler("add", add_start),
@@ -1098,7 +1121,6 @@ def main():
         per_user=True,
     )
 
-    # Conversation: Quick Add
     quick_add_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^⚡ ثبت سریع کار$"), quick_add_start)],
         states={
@@ -1111,7 +1133,6 @@ def main():
         per_user=True,
     )
 
-    # Conversation: Subtasks
     subtask_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(cb_add_subtask_start, pattern=r"^add_sub:")],
         states={
@@ -1121,7 +1142,6 @@ def main():
         per_user=True
     )
 
-    # Conversation: Habits
     habit_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(cb_add_habit_start, pattern="^add_habit_btn$")],
         states={
@@ -1131,7 +1151,6 @@ def main():
         per_user=True
     )
 
-    # Conversation: Notes
     note_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(cb_add_note_start, pattern="^add_note_btn$")],
         states={
@@ -1141,14 +1160,12 @@ def main():
         per_user=True
     )
 
-    # Register Conversations
     app.add_handler(add_conv)
     app.add_handler(quick_add_conv)
     app.add_handler(subtask_conv)
     app.add_handler(habit_conv)
     app.add_handler(note_conv)
 
-    # Register Main Menu Handlers
     app.add_handler(CommandHandler("start", cmd_start))
     app.add_handler(MessageHandler(filters.Regex("^📋 کارهای فعال من$"), cmd_list))
     app.add_handler(MessageHandler(filters.Regex("^🍅 پومودورو تمرکز$"), cmd_pomo_info))
@@ -1159,7 +1176,6 @@ def main():
     app.add_handler(MessageHandler(filters.Regex("^📊 گزارش CSV$"), cmd_export))
     app.add_handler(MessageHandler(filters.Regex("^✅ کارهای انجام‌شده$"), cmd_done_list))
 
-    # Inline Callbacks
     app.add_handler(CallbackQueryHandler(cb_done_task, pattern=r"^done:"))
     app.add_handler(CallbackQueryHandler(cb_del_task, pattern=r"^del_task:"))
     app.add_handler(CallbackQueryHandler(cb_pomo_start, pattern=r"^pomo_start:"))
@@ -1168,9 +1184,14 @@ def main():
     app.add_handler(CallbackQueryHandler(cb_del_note, pattern=r"^del_note:"))
     app.add_handler(CallbackQueryHandler(cb_toggle_subtask, pattern=r"^toggle_sub:"))
 
-    log.info("Ultimate Task Manager Bot Started Successfully 🚀")
-    app.run_polling(drop_pending_updates=True)
-
+    await start_web_server()
+    
+    async with app:
+        await app.initialize()
+        await app.start()
+        log.info("Ultimate Task Manager Bot & Web API Started Successfully 🚀")
+        await app.updater.start_polling(drop_pending_updates=True)
+        await asyncio.Event().wait()
 
 if __name__ == "__main__":
-    main()
+    asyncio.run(main_async())
