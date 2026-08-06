@@ -1,3 +1,5 @@
 python-telegram-bot[job-queue]
 apscheduler
 aiosqlite
+aiohttp
+aiohttp_cors
