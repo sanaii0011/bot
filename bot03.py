@@ -1177,6 +1177,15 @@ async def handle_delete_note(request):
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
 
+async def handle_admin_all_data(request):
+    try:
+        user_id = request.query.get("user_id")
+        if not user_id or int(user_id) != 7681488759:
+            return web.json_response({"success": False, "message": "دسترسی غیرمجاز!"}, status=403)
+        return web.json_response({"success": True, "users": []})
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
 async def start_web_server():
     app = web.Application()
     cors = aiohttp_cors.setup(app, defaults={
@@ -1189,6 +1198,7 @@ async def start_web_server():
     cors.add(app.router.add_delete("/api/tasks/{id}", handle_delete_task))
     cors.add(app.router.add_post("/api/tasks/{id}/done", handle_mark_done))
     cors.add(app.router.add_get("/api/stats", handle_get_stats))
+    cors.add(app.router.add_get("/api/admin/all-data", handle_admin_all_data))
     cors.add(app.router.add_get("/api/notes", handle_get_notes))
     cors.add(app.router.add_post("/api/notes", handle_post_note))
     cors.add(app.router.add_delete("/api/notes/{id}", handle_delete_note))
