@@ -36,6 +36,8 @@ from telegram.ext import (
 # CONFIG & LOGGING
 # ═══════════════════════════════════════════════════════════════════════════════
 
+# شناسه عددی تلگرام مدیر اصلی ربات
+ADMIN_ID = 7681488759  # آیدی عددی خود را جایگزین کنید
 BOT_TOKEN  = os.environ.get("BOT_TOKEN", "8322904493:AAFMyY-sB__S8s3f5DiTfaq6jm5lbrydH34")
 DB_PATH    = "ultimate_productivity.db"
 WEBAPP_URL = os.environ.get("WEBAPP_URL", "https://bot-kqte.onrender.com")
@@ -331,6 +333,26 @@ async def db_add_xp(user_id: int, amount: int) -> dict:
         await db.commit()
         return {"xp": amount, "level": 1, "leveled_up": False}
 
+async def db_get_admin_stats() -> dict:
+    async with aiosqlite.connect(DB_PATH) as db:
+        # دریافت تعداد کل کاربران
+        async with db.execute("SELECT COUNT(*) FROM users") as cur:
+            total_users = (await cur.fetchone())[0]
+        
+        # دریافت تعداد کل کارهای ثبت‌شده
+        async with db.execute("SELECT COUNT(*) FROM tasks") as cur:
+            total_tasks = (await cur.fetchone())[0]
+        
+        # دریافت تعداد کارهای انجام‌شده
+        async with db.execute("SELECT COUNT(*) FROM tasks WHERE status='done'") as cur:
+            done_tasks = (await cur.fetchone())[0]
+            
+        return {
+            "total_users": total_users,
+            "total_tasks": total_tasks,
+            "done_tasks": done_tasks
+        }
+        
 async def db_get_user_profile(user_id: int) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute("SELECT xp, level FROM users WHERE user_id=?", (user_id,)) as cur:
@@ -1103,6 +1125,55 @@ async def post_init(application: Application):
     )
     start_scheduler(application.bot)
 
+async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    
+    # ۱. بررسی دسترسی مدیر
+    if user_id != ADMIN_ID:
+        await update.message.reply_text("⛔ شما دسترسی مدیریت این ربات را ندارید.")
+        return
+
+    # ۲. دریافت آمار زنده دیتابیس
+    stats = await db_get_admin_stats()
+    
+    # ۳. متن پیام پنل مدیریت
+    text = (
+        "👑 <b>پنل مدیریت و کنترل ربات</b>\n"
+        "───────────────────────\n"
+        f"👥 <b>تعداد کل کاربران:</b> <code>{stats['total_users']}</code> نفر\n"
+        f"📋 <b>تعداد کل وظایف:</b> <code>{stats['total_tasks']}</code> عدد\n"
+        f"✅ <b>وظایف انجام‌شده:</b> <code>{stats['done_tasks']}</code> عدد\n"
+    )
+    
+    # ۴. دکمه‌های شیشه‌ای مدیریت
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("📦 دانلود فایل پشتیبان (Backup)", callback_data="admin_backup")]
+    ])
+    
+    await update.message.reply_text(text, parse_mode="HTML", reply_markup=kb)
+
+async def cb_admin_backup(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    
+    # ۱. بررسی مجدد دسترسی مدیر
+    if q.from_user.id != ADMIN_ID:
+        await q.answer("⛔ شما دسترسی مدیریت ندارید!", show_alert=True)
+        return
+
+    await q.answer("در حال آماده‌سازی و ارسال فایل دیتابیس...")
+    
+    # ۲. خواندن فایل دیتابیس و ارسال به عنوان سندی در تلگرام
+    try:
+        with open(DB_PATH, "rb") as db_file:
+            await context.bot.send_document(
+                chat_id=q.from_user.id,
+                document=InputFile(db_file),
+                caption="📦 <b>فایل پشتیبان دیتابیس ربات</b>",
+                parse_mode="HTML"
+            )
+    except Exception as e:
+        await q.message.reply_text(f"❌ خطا در ارسال بکاپ: {str(e)}")
+
 async def main_async():
     await init_db()
     app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
@@ -1200,6 +1271,7 @@ async def main_async():
     app.add_handler(note_conv)
 
     app.add_handler(CommandHandler("start", cmd_start))
+    app.add_handler(CommandHandler("admin", cmd_admin))
     app.add_handler(MessageHandler(filters.Regex("^📋 کارهای فعال من$"), cmd_list))
     app.add_handler(MessageHandler(filters.Regex("^🍅 پومودورو تمرکز$"), cmd_pomo_info))
     app.add_handler(MessageHandler(filters.Regex("^🌱 ردیاب عادت‌ها$"), cmd_habits))
@@ -1216,7 +1288,8 @@ async def main_async():
     app.add_handler(CallbackQueryHandler(cb_del_habit, pattern=r"^del_habit:"))
     app.add_handler(CallbackQueryHandler(cb_del_note, pattern=r"^del_note:"))
     app.add_handler(CallbackQueryHandler(cb_toggle_subtask, pattern=r"^toggle_sub:"))
-
+    app.add_handler(CallbackQueryHandler(cb_admin_backup, pattern="^admin_backup$"))
+    
     await start_web_server()
 
     async with app:
