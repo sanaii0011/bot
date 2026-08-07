@@ -3,324 +3,397 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>داشبورد پیشرفته مدیریت وظایف</title>
+  <title>Ultra Productivity Hub</title>
   
   <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- FontAwesome 6 -->
+  <!-- FontAwesome 6 Pro/Free -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <!-- Google Fonts: Vazirmatn -->
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;800;900&display=swap" rel="stylesheet">
-  <!-- Canvas Confetti CDN -->
+  <!-- Google Vazirmatn Font -->
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;900&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti -->
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
   <style>
-    /* ==========================================
-       THEMES & CUSTOMIZATION ENGINE
-       ========================================== */
+    /* ==========================================================================
+       DYNAMIC THEME ENGINE & SYSTEM VARIABLES
+       ========================================================================== */
     :root {
-      --font-main: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
-      --accent-color: #6366f1;
-      --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6);
-      --bg-color: #0f172a;
-      --card-bg: rgba(30, 41, 59, 0.7);
+      --font-family: 'Vazirmatn', system-ui, -apple-system, sans-serif;
+      --primary: #8b5cf6;
+      --primary-glow: rgba(139, 92, 246, 0.4);
+      --primary-gradient: linear-gradient(135deg, #a855f7, #6366f1);
+      --bg: #090d16;
+      --card-bg: rgba(22, 30, 46, 0.65);
       --card-border: rgba(255, 255, 255, 0.08);
-      --text-main: #f8fafc;
-      --text-muted: #94a3b8;
+      --text: #f8fafc;
+      --text-sub: #94a3b8;
+      --danger: #f43f5e;
       --success: #10b981;
       --warning: #f59e0b;
-      --danger: #ef4444;
-      --radius: 18px;
+      --radius: 20px;
     }
 
-    /* Theme: Cyberpunk Neon */
+    /* THEME PRESETS */
     body.theme-cyberpunk {
-      --bg-color: #05050f;
-      --card-bg: rgba(20, 15, 35, 0.85);
-      --card-border: rgba(236, 72, 153, 0.3);
-      --accent-color: #ec4899;
-      --accent-gradient: linear-gradient(135deg, #ec4899, #8b5cf6);
-      --text-main: #ffffff;
-      --text-muted: #a78bfa;
+      --primary: #ec4899;
+      --primary-glow: rgba(236, 72, 153, 0.5);
+      --primary-gradient: linear-gradient(135deg, #ec4899, #8b5cf6);
+      --bg: #030014;
+      --card-bg: rgba(15, 7, 32, 0.75);
+      --card-border: rgba(236, 72, 153, 0.25);
     }
 
-    /* Theme: AMOLED Pure Black */
     body.theme-amoled {
-      --bg-color: #000000;
-      --card-bg: #121212;
-      --card-border: #262626;
-      --accent-color: #3b82f6;
-      --accent-gradient: linear-gradient(135deg, #2563eb, #1d4ed8);
-      --text-main: #ffffff;
-      --text-muted: #737373;
+      --primary: #3b82f6;
+      --primary-glow: rgba(59, 130, 246, 0.3);
+      --primary-gradient: linear-gradient(135deg, #2563eb, #1d4ed8);
+      --bg: #000000;
+      --card-bg: #111111;
+      --card-border: #222222;
     }
 
-    /* Theme: Emerald Forest */
     body.theme-emerald {
-      --bg-color: #064e3b;
-      --card-bg: rgba(6, 78, 59, 0.6);
+      --primary: #10b981;
+      --primary-glow: rgba(16, 185, 129, 0.4);
+      --primary-gradient: linear-gradient(135deg, #10b981, #059669);
+      --bg: #022c22;
+      --card-bg: rgba(6, 78, 59, 0.5);
       --card-border: rgba(52, 211, 153, 0.2);
-      --accent-color: #10b981;
-      --accent-gradient: linear-gradient(135deg, #10b981, #059669);
-      --text-main: #ecfdf5;
-      --text-muted: #6ee7b7;
     }
 
-    /* Theme: Sunset Neon */
-    body.theme-sunset {
-      --bg-color: #2e1065;
-      --card-bg: rgba(88, 28, 135, 0.5);
-      --card-border: rgba(244, 63, 94, 0.2);
-      --accent-color: #f43f5e;
-      --accent-gradient: linear-gradient(135deg, #f43f5e, #fb923c);
-      --text-main: #fff1f2;
-      --text-muted: #fda4af;
+    body.theme-gold {
+      --primary: #f59e0b;
+      --primary-glow: rgba(245, 158, 11, 0.4);
+      --primary-gradient: linear-gradient(135deg, #fbbf24, #d97706);
+      --bg: #1c1002;
+      --card-bg: rgba(69, 39, 4, 0.6);
+      --card-border: rgba(245, 158, 11, 0.2);
     }
 
-    /* BASE STYLES */
+    body.theme-hologram {
+      --primary: #06b6d4;
+      --primary-glow: rgba(6, 182, 212, 0.5);
+      --primary-gradient: linear-gradient(135deg, #06b6d4, #3b82f6);
+      --bg: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.5);
+      --card-border: rgba(56, 189, 248, 0.25);
+    }
+
+    /* GLOBAL RESET & BASE */
     * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
+    
     body {
-      font-family: var(--font-main);
-      background-color: var(--bg-color);
-      color: var(--text-main);
-      padding: 16px;
-      padding-bottom: 90px;
-      direction: rtl;
+      font-family: var(--font-family);
+      background-color: var(--bg);
+      color: var(--text);
       min-height: 100vh;
+      padding: 16px;
+      padding-bottom: 100px;
+      direction: rtl;
+      overflow-x: hidden;
       transition: background-color 0.4s ease, color 0.4s ease;
     }
 
-    /* GLASSMORPHISM CARD CONTAINER */
-    .glass-panel {
+    /* AMBIENT GLOW BLOBS (BACKGROUND EFFECT) */
+    .ambient-blob {
+      position: fixed;
+      width: 250px;
+      height: 250px;
+      border-radius: 50%;
+      background: var(--primary-glow);
+      filter: blur(80px);
+      z-index: -1;
+      pointer-events: none;
+      animation: blobFloat 10s infinite alternate ease-in-out;
+    }
+    .blob-1 { top: -50px; right: -50px; }
+    .blob-2 { bottom: 100px; left: -50px; animation-delay: -5s; }
+
+    @keyframes blobFloat {
+      0% { transform: translate(0, 0) scale(1); }
+      100% { transform: translate(30px, 50px) scale(1.2); }
+    }
+
+    /* GLASS PANEL UI */
+    .glass {
       background: var(--card-bg);
       border: 1px solid var(--card-border);
-      backdrop-filter: blur(16px);
-      -webkit-backdrop-filter: blur(16px);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
       border-radius: var(--radius);
-      padding: 16px;
-      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
     }
 
-    /* HEADER & USER PROFILE GAMIFICATION */
-    .header-card {
+    /* APP HEADER CARD */
+    .header-panel {
+      padding: 18px;
+      margin-bottom: 20px;
       position: relative;
       overflow: hidden;
-      margin-bottom: 20px;
-      background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+    }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
+    .profile-info { display: flex; align-items: center; gap: 12px; }
+    .avatar-ring {
+      width: 52px; height: 52px; border-radius: 16px;
+      background: var(--primary-gradient); display: flex; justify-content: center; align-items: center;
+      font-size: 22px; color: #fff; box-shadow: 0 0 20px var(--primary-glow);
+    }
+    .profile-meta h2 { font-size: 1.15em; font-weight: 800; }
+    .profile-meta span { font-size: 0.78em; color: var(--text-sub); }
+
+    .xp-bar-wrapper { margin-top: 10px; }
+    .xp-track { background: rgba(0, 0, 0, 0.4); height: 8px; border-radius: 10px; overflow: hidden; }
+    .xp-fill { background: var(--primary-gradient); height: 100%; width: 0%; transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .xp-info { display: flex; justify-content: space-between; font-size: 0.75em; color: var(--text-sub); margin-top: 6px; font-weight: 600; }
+
+    /* TAB VIEWS MANAGEMENT */
+    .tab-content { display: none; }
+    .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
+    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+
+    /* SEARCH & FILTER BAR */
+    .search-filter-wrapper { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
+    .search-input-box { position: relative; }
+    .search-input-box input {
+      width: 100%; padding: 12px 42px 12px 16px; border-radius: 14px;
+      border: 1px solid var(--card-border); background: rgba(0, 0, 0, 0.25);
+      color: var(--text); font-family: inherit; outline: none; font-size: 0.9em;
+    }
+    .search-input-box i { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-sub); }
+
+    .filter-pills { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+    .filter-pills::-webkit-scrollbar { display: none; }
+    .pill-btn {
+      background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border);
+      color: var(--text-sub); padding: 8px 16px; border-radius: 20px; font-size: 0.8em;
+      white-space: nowrap; cursor: pointer; transition: 0.2s; font-weight: 600; font-family: inherit;
+    }
+    .pill-btn.active { background: var(--primary-gradient); color: #fff; border-color: transparent; box-shadow: 0 4px 15px var(--primary-glow); }
+
+    /* TASK CARDS */
+    .task-list { display: flex; flex-direction: column; gap: 12px; }
+    .task-card {
+      padding: 16px; position: relative; transition: all 0.25s ease;
       border: 1px solid var(--card-border);
     }
-    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
-    .user-info { display: flex; align-items: center; gap: 12px; }
-    .avatar-box {
-      width: 48px; height: 48px; border-radius: 14px; background: var(--accent-gradient);
-      display: flex; justify-content: center; align-items: center; font-size: 20px; color: white;
-      box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-weight: bold;
-    }
-    .user-title h2 { font-size: 1.1em; font-weight: 800; margin: 0; }
-    .user-title span { font-size: 0.75em; color: var(--text-muted); }
-    
-    .settings-btn {
-      background: rgba(255,255,255,0.08); border: 1px solid var(--card-border); color: var(--text-main);
-      width: 40px; height: 40px; border-radius: 12px; display: flex; justify-content: center; align-items: center;
-      cursor: pointer; transition: transform 0.2s;
-    }
-    .settings-btn:active { transform: scale(0.9) rotate(45deg); }
-
-    /* XP PROGRESS RING & BAR */
-    .xp-section { margin-top: 10px; }
-    .xp-bar-bg { background: rgba(0, 0, 0, 0.3); border-radius: 10px; height: 10px; overflow: hidden; position: relative; }
-    .xp-bar-fill { background: var(--accent-gradient); height: 100%; width: 0%; transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
-    .xp-labels { display: flex; justify-content: space-between; font-size: 0.75em; color: var(--text-muted); margin-top: 6px; font-weight: 600; }
-
-    /* DASHBOARD STATS ROW */
-    .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
-    .stat-card { text-align: center; padding: 12px 8px; }
-    .stat-card .num { font-size: 1.2em; font-weight: 800; color: var(--accent-color); }
-    .stat-card .label { font-size: 0.7em; color: var(--text-muted); margin-top: 2px; }
-
-    /* SEARCH & FILTER CONTROLS */
-    .controls-panel { margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
-    .search-box {
-      position: relative; width: 100%;
-    }
-    .search-box input {
-      width: 100%; padding: 12px 40px 12px 14px; border-radius: 12px;
-      border: 1px solid var(--card-border); background: rgba(0, 0, 0, 0.2);
-      color: var(--text-main); font-family: inherit; font-size: 0.9em; outline: none;
-    }
-    .search-box i { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
-
-    .filter-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
-    .filter-scroll::-webkit-scrollbar { display: none; }
-    .filter-chip {
-      background: rgba(255,255,255,0.05); border: 1px solid var(--card-border);
-      color: var(--text-muted); padding: 8px 16px; border-radius: 20px; font-size: 0.8em;
-      white-space: nowrap; cursor: pointer; transition: all 0.2s; font-weight: 600;
-    }
-    .filter-chip.active { background: var(--accent-gradient); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
-
-    /* TASK CARDS GRID & LIST VIEW */
-    .tasks-container { display: flex; flex-direction: column; gap: 12px; }
-    .tasks-container.grid-view { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
-
-    .task-card {
-      position: relative; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
-      animation: popIn 0.35s ease-out forwards;
-    }
-    @keyframes popIn { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
     .task-card:active { transform: scale(0.98); }
+    .task-title { font-weight: 700; font-size: 1em; margin-bottom: 6px; }
+    .task-desc { font-size: 0.82em; color: var(--text-sub); margin-bottom: 12px; line-height: 1.5; }
 
-    .task-header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-    .task-title { font-weight: 700; font-size: 0.95em; line-height: 1.4; color: var(--text-main); }
-    .task-desc { font-size: 0.8em; color: var(--text-muted); margin: 6px 0 10px 0; line-height: 1.5; }
+    .tags-group { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
+    .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.7em; font-weight: 600; background: rgba(255,255,255,0.06); }
+    .badge.urgent { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.3); }
+    .badge.important { background: rgba(245, 158, 11, 0.2); color: #fef08a; border: 1px solid rgba(245, 158, 11, 0.3); }
 
-    /* BADGES & Eisenhower MATRIX TAGS */
-    .tags-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
-    .tag-badge { padding: 3px 8px; border-radius: 6px; font-size: 0.7em; font-weight: 600; background: rgba(255,255,255,0.06); }
-    .tag-badge.urgent { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
-    .tag-badge.important { background: rgba(245, 158, 11, 0.2); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.3); }
-
-    /* SUBTASK PROGRESS IN CARD */
-    .subtask-mini-progress {
-      margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 8px; font-size: 0.75em;
-      display: flex; justify-content: space-between; align-items: center; color: var(--text-muted);
+    .card-footer { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--card-border); padding-top: 10px; }
+    .btn-action {
+      background: rgba(255, 255, 255, 0.06); border: none; padding: 8px 14px; border-radius: 10px;
+      color: var(--text); font-size: 0.8em; cursor: pointer; display: flex; align-items: center; gap: 6px;
+      font-family: inherit; font-weight: 600; transition: 0.2s;
     }
+    .btn-action.complete { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+    .btn-action.delete { background: rgba(244, 63, 94, 0.2); color: #fda4af; }
 
-    .card-actions { display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--card-border); padding-top: 10px; }
-    .action-btn {
-      background: rgba(255,255,255,0.06); border: none; padding: 8px 12px; border-radius: 10px;
-      color: var(--text-main); font-size: 0.8em; cursor: pointer; display: flex; align-items: center; gap: 6px;
-      font-family: inherit; font-weight: 600; transition: background 0.2s;
-    }
-    .action-btn.done { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
-    .action-btn.del { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
+    /* EISENHOWER MATRIX GRID VIEW */
+    .matrix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+    .matrix-box { padding: 14px; min-height: 160px; }
+    .matrix-title { font-size: 0.85em; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
 
-    /* FAB ADD BUTTON */
-    .fab-btn {
-      position: fixed; bottom: 24px; left: 24px; width: 60px; height: 60px;
-      background: var(--accent-gradient); color: white; border-radius: 50%;
-      display: flex; justify-content: center; align-items: center; font-size: 24px;
-      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); cursor: pointer; border: none;
-      z-index: 100; transition: transform 0.2s;
+    /* LIVE POMODORO TIMER WEBAPP VIEW */
+    .pomo-wrapper { text-align: center; padding: 30px 20px; }
+    .timer-circle {
+      width: 200px; height: 200px; border-radius: 50%;
+      background: radial-gradient(circle, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.8) 100%);
+      border: 4px solid var(--primary); box-shadow: 0 0 30px var(--primary-glow);
+      margin: 20px auto; display: flex; flex-direction: column; justify-content: center; align-items: center;
     }
-    .fab-btn:active { transform: scale(0.9) rotate(90deg); }
+    .timer-display { font-size: 2.8em; font-weight: 900; letter-spacing: 2px; }
+    .pomo-controls { display: flex; justify-content: center; gap: 14px; margin-top: 20px; }
+
+    /* BOTTOM APP NAVIGATION BAR */
+    .bottom-nav {
+      position: fixed; bottom: 0; left: 0; right: 0; height: 75px;
+      background: rgba(10, 15, 26, 0.85); border-top: 1px solid var(--card-border);
+      backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
+      display: flex; justify-content: space-around; align-items: center; z-index: 900;
+    }
+    .nav-item {
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      color: var(--text-sub); font-size: 0.72em; font-weight: 600; cursor: pointer; transition: 0.2s;
+    }
+    .nav-item i { font-size: 18px; }
+    .nav-item.active { color: var(--primary); transform: translateY(-2px); }
+
+    /* FAB ADD TASK BUTTON */
+    .fab {
+      position: fixed; bottom: 90px; left: 20px; width: 58px; height: 58px;
+      background: var(--primary-gradient); color: #fff; border-radius: 50%;
+      display: flex; justify-content: center; align-items: center; font-size: 22px;
+      box-shadow: 0 10px 25px var(--primary-glow); cursor: pointer; border: none; z-index: 800;
+    }
 
     /* MODAL SHEETS */
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75);
+    .modal-backdrop {
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8);
       backdrop-filter: blur(8px); display: none; justify-content: center; align-items: flex-end; z-index: 1000;
     }
     .modal-sheet {
-      background: var(--bg-color); border: 1px solid var(--card-border); width: 100%; max-width: 500px;
-      border-radius: 28px 28px 0 0; padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
-      animation: slideUp 0.3s ease-out; max-height: 90vh; overflow-y: auto;
+      background: var(--bg); border: 1px solid var(--card-border); width: 100%; max-width: 500px;
+      border-radius: 28px 28px 0 0; padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
+      animation: sheetUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-height: 85vh; overflow-y: auto;
     }
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
     .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; margin-bottom: 6px; font-size: 0.85em; color: var(--text-muted); font-weight: 600; }
+    .form-group label { display: block; margin-bottom: 6px; font-size: 0.82em; color: var(--text-sub); font-weight: 700; }
     .form-group input, .form-group select, .form-group textarea {
-      width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--card-border);
-      background: rgba(0,0,0,0.3); color: var(--text-main); font-family: inherit; outline: none; font-size: 0.9em;
+      width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--card-border);
+      background: rgba(0,0,0,0.3); color: var(--text); font-family: inherit; font-size: 0.9em; outline: none;
     }
-    .toggle-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.04); padding: 12px; border-radius: 12px; margin-bottom: 10px; }
 
-    .btn-row { display: flex; gap: 10px; margin-top: 20px; }
-    .btn-submit { flex: 1; padding: 14px; border: none; border-radius: 14px; background: var(--accent-gradient); color: white; font-weight: bold; cursor: pointer; font-family: inherit; }
-    .btn-cancel { flex: 1; padding: 14px; border: none; border-radius: 14px; background: rgba(255,255,255,0.1); color: var(--text-main); font-weight: bold; cursor: pointer; font-family: inherit; }
+    .btn-group { display: flex; gap: 10px; margin-top: 24px; }
+    .btn-main { flex: 1; padding: 14px; border: none; border-radius: 14px; background: var(--primary-gradient); color: #fff; font-weight: 800; cursor: pointer; font-family: inherit; }
+    .btn-secondary { flex: 1; padding: 14px; border: none; border-radius: 14px; background: rgba(255,255,255,0.08); color: var(--text); font-weight: 700; cursor: pointer; font-family: inherit; }
 
-    /* CUSTOMIZATION OPTIONS IN SETTINGS */
-    .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
-    .theme-card {
-      padding: 12px; border-radius: 12px; border: 2px solid transparent; background: rgba(255,255,255,0.05);
-      cursor: pointer; text-align: center; font-size: 0.85em; font-weight: 600;
+    /* CUSTOMIZATION OPTIONS GRID */
+    .theme-selector { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+    .theme-card-option {
+      padding: 12px; border-radius: 14px; border: 2px solid transparent; background: rgba(255,255,255,0.04);
+      cursor: pointer; text-align: center; font-size: 0.85em; font-weight: 700;
     }
-    .theme-card.active { border-color: var(--accent-color); background: rgba(255,255,255,0.12); }
+    .theme-card-option.selected { border-color: var(--primary); background: rgba(255,255,255,0.1); }
 
-    .loader { text-align: center; color: var(--text-muted); padding: 50px 0; }
+    .loader { text-align: center; color: var(--text-sub); padding: 40px 0; }
   </style>
 </head>
-<body class="theme-default">
+<body>
 
-  <!-- HEADER GAMIFICATION PANEL -->
-  <div class="glass-panel header-card">
+  <!-- AMBIENT BACKGROUND GLOW BLOBS -->
+  <div class="ambient-blob blob-1" id="blob1"></div>
+  <div class="ambient-blob blob-2" id="blob2"></div>
+
+  <!-- APP HEADER PANEL -->
+  <div class="glass header-panel">
     <div class="header-top">
-      <div class="user-info">
-        <div class="avatar-box" id="uAvatar"><i class="fas fa-user-ninja"></i></div>
-        <div class="user-title">
+      <div class="profile-info">
+        <div class="avatar-ring" id="uAvatar"><i class="fas fa-bolt"></i></div>
+        <div class="profile-meta">
           <h2 id="uName">کارهای من</h2>
           <span id="uBadge">🌱 تازه کار (Level 1)</span>
         </div>
       </div>
-      <button class="settings-btn" onclick="openSettingsModal()"><i class="fas fa-sliders"></i></button>
     </div>
-
-    <!-- XP BAR -->
-    <div class="xp-section">
-      <div class="xp-bar-bg">
-        <div class="xp-bar-fill" id="xpFill"></div>
-      </div>
-      <div class="xp-labels">
+    <div class="xp-bar-wrapper">
+      <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
+      <div class="xp-info">
         <span>پیشرفت سطح</span>
         <span id="xpText">0 / 100 XP</span>
       </div>
     </div>
   </div>
 
-  <!-- DASHBOARD STATS -->
-  <div class="stats-row">
-    <div class="glass-panel stat-card">
-      <div class="num" id="stActive">0</div>
-      <div class="label">کارهای فعال</div>
+  <!-- TAB 1: MAIN TASKS VIEW -->
+  <div id="tabTasks" class="tab-content active">
+    <div class="search-filter-wrapper">
+      <div class="search-input-box">
+        <i class="fas fa-search"></i>
+        <input type="text" id="searchInput" placeholder="جستجوی هوشمند..." oninput="onSearchChange()">
+      </div>
+      <div class="filter-pills">
+        <button class="pill-btn active" onclick="setFilter('All', this)">🌐 همه</button>
+        <button class="pill-btn" onclick="setFilter('Personal', this)">👤 شخصی</button>
+        <button class="pill-btn" onclick="setFilter('Work', this)">💼 کاری</button>
+        <button class="pill-btn" onclick="setFilter('Study', this)">📚 تحصیلی</button>
+      </div>
     </div>
-    <div class="glass-panel stat-card">
-      <div class="num" id="stDone">0</div>
-      <div class="label">انجام‌شده</div>
-    </div>
-    <div class="glass-panel stat-card">
-      <div class="num" id="stRatio">0%</div>
-      <div class="label">بازدهی</div>
+
+    <div id="taskListContainer" class="task-list">
+      <div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>در حال ارتباط با سرور...</div>
     </div>
   </div>
 
-  <!-- CONTROLS: SEARCH & CATEGORY FILTERS -->
-  <div class="controls-panel">
-    <div class="search-box">
-      <i class="fas fa-search"></i>
-      <input type="text" id="searchInput" placeholder="جستجوی سریع کارها..." oninput="onSearchChange()">
-    </div>
-
-    <div class="filter-scroll">
-      <button class="filter-chip active" onclick="setFilter('All', this)">🌐 همه</button>
-      <button class="filter-chip" onclick="setFilter('Personal', this)">👤 شخصی</button>
-      <button class="filter-chip" onclick="setFilter('Work', this)">💼 کاری</button>
-      <button class="filter-chip" onclick="setFilter('Study', this)">📚 تحصیلی</button>
-      <button class="filter-chip" onclick="setFilter('Urgent', this)">🔥 فوری/ضروری</button>
+  <!-- TAB 2: EISENHOWER MATRIX VIEW -->
+  <div id="tabMatrix" class="tab-content">
+    <div class="matrix-grid">
+      <div class="glass matrix-box">
+        <div class="matrix-title" style="color: var(--danger);"><i class="fas fa-fire"></i> فوری و مهم</div>
+        <div id="mQ1" class="task-list"></div>
+      </div>
+      <div class="glass matrix-box">
+        <div class="matrix-title" style="color: var(--warning);"><i class="fas fa-calendar"></i> مهم / غیرفوری</div>
+        <div id="mQ2" class="task-list"></div>
+      </div>
+      <div class="glass matrix-box">
+        <div class="matrix-title" style="color: #3b82f6;"><i class="fas fa-bolt"></i> فوری / کم‌اهمیت</div>
+        <div id="mQ3" class="task-list"></div>
+      </div>
+      <div class="glass matrix-box">
+        <div class="matrix-title" style="color: var(--success);"><i class="fas fa-leaf"></i> غیرفوری و کم‌اهمیت</div>
+        <div id="mQ4" class="task-list"></div>
+      </div>
     </div>
   </div>
 
-  <!-- TASKS CONTAINER -->
-  <div id="tasksContainer" class="tasks-container">
-    <div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>در حال همگام‌سازی اطلاعات...</div>
+  <!-- TAB 3: POMODORO TIMER VIEW -->
+  <div id="tabPomo" class="tab-content">
+    <div class="glass pomo-wrapper">
+      <h2>🍅 پومودورو تمرکز عمیق</h2>
+      <p style="font-size: 0.8em; color: var(--text-sub); margin-top: 4px;">۲۵ دقیقه تمرکز خالص بدون حواس‌پرتی</p>
+      
+      <div class="timer-circle">
+        <div class="timer-display" id="pomoTimer">25:00</div>
+      </div>
+
+      <div class="pomo-controls">
+        <button class="btn-main" style="flex: initial; width: 120px;" onclick="togglePomoTimer()" id="pomoBtn">شروع تمرکز</button>
+        <button class="btn-secondary" style="flex: initial; width: 100px;" onclick="resetPomoTimer()">ریست</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- TAB 4: CUSTOMIZER & SETTINGS VIEW -->
+  <div id="tabSettings" class="tab-content">
+    <div class="glass" style="padding: 20px;">
+      <h3 style="margin-bottom: 16px;">⚙️ شخصی‌سازی و پوسته</h3>
+
+      <label style="font-size: 0.82em; color: var(--text-sub); font-weight: 700;">تم متحرک وب‌اپ</label>
+      <div class="theme-selector">
+        <div class="theme-card-option" onclick="selectTheme('default', this)">🌌 پیش‌فرض دارک</div>
+        <div class="theme-card-option" onclick="selectTheme('cyberpunk', this)">⚡ سایبرپانک</div>
+        <div class="theme-card-option" onclick="selectTheme('amoled', this)">🖤 مشکی AMOLED</div>
+        <div class="theme-card-option" onclick="selectTheme('emerald', this)">🌲 غار زمردی</div>
+        <div class="theme-card-option" onclick="selectTheme('gold', this)">👑 طلایی سلطنتی</div>
+        <div class="theme-card-option" onclick="selectTheme('hologram', this)">💎 هولوگرافیک</div>
+      </div>
+    </div>
   </div>
 
   <!-- FAB ADD BUTTON -->
-  <button class="fab-btn" onclick="openTaskModal('add')"><i class="fas fa-plus"></i></button>
+  <button class="fab" onclick="openTaskModal('add')"><i class="fas fa-plus"></i></button>
+
+  <!-- BOTTOM APP NAVIGATION BAR -->
+  <div class="bottom-nav">
+    <div class="nav-item active" onclick="switchTab('tabTasks', this)"><i class="fas fa-list-check"></i><span>وظایف</span></div>
+    <div class="nav-item" onclick="switchTab('tabMatrix', this)"><i class="fas fa-table-cells-large"></i><span>ماتریس</span></div>
+    <div class="nav-item" onclick="switchTab('tabPomo', this)"><i class="fas fa-stopwatch"></i><span>پومودورو</span></div>
+    <div class="nav-item" onclick="switchTab('tabSettings', this)"><i class="fas fa-sliders"></i><span>تنظیمات</span></div>
+  </div>
 
   <!-- ADD / EDIT TASK MODAL SHEET -->
-  <div class="modal-overlay" id="taskModal">
+  <div class="modal-backdrop" id="taskModal">
     <div class="modal-sheet">
       <h3 id="modalTitle" style="margin-bottom: 16px;">➕ افزودن کار جدید</h3>
       <input type="hidden" id="mTaskId">
 
       <div class="form-group">
         <label>عنوان کار *</label>
-        <input type="text" id="mTitle" placeholder="مثلاً: طراحی لوگو پروژه...">
+        <input type="text" id="mTitle" placeholder="عنوان...">
       </div>
 
       <div class="form-group">
-        <label>توضیحات تکمیلی</label>
-        <textarea id="mDesc" rows="3" placeholder="جزئیات بیشتر..."></textarea>
+        <label>توضیحات</label>
+        <textarea id="mDesc" rows="2" placeholder="جزئیات..."></textarea>
       </div>
 
       <div style="display: flex; gap: 10px;">
@@ -342,47 +415,9 @@
         </div>
       </div>
 
-      <!-- EISENHOWER TOGGLES -->
-      <div class="toggle-row">
-        <span>🔥 آیا این کار <b>فوری</b> است؟</span>
-        <input type="checkbox" id="mUrgent" style="width: 20px; height: 20px;">
-      </div>
-      <div class="toggle-row">
-        <span>⭐ آیا این کار <b>مهم</b> است؟</span>
-        <input type="checkbox" id="mImportant" checked style="width: 20px; height: 20px;">
-      </div>
-
-      <div class="btn-row">
-        <button class="btn-cancel" onclick="closeTaskModal()">انصراف</button>
-        <button class="btn-submit" onclick="saveTask()">💾 ذخیره کار</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- SETTINGS & CUSTOMIZATION MODAL -->
-  <div class="modal-overlay" id="settingsModal">
-    <div class="modal-sheet">
-      <h3 style="margin-bottom: 16px;">⚙️ تنظیمات و شخصی‌سازی</h3>
-
-      <label style="font-size: 0.85em; color: var(--text-muted); font-weight: bold;">پوسته و تم گرافیکی</label>
-      <div class="theme-grid">
-        <div class="theme-card" onclick="applyTheme('default', this)">🌌 پیش‌فرض دارک</div>
-        <div class="theme-card" onclick="applyTheme('cyberpunk', this)">⚡ سایبرپانک</div>
-        <div class="theme-card" onclick="applyTheme('amoled', this)">🖤 مشکی AMOLED</div>
-        <div class="theme-card" onclick="applyTheme('emerald', this)">🌲 زمردی</div>
-        <div class="theme-card" onclick="applyTheme('sunset', this)">🌅 غروب</div>
-      </div>
-
-      <div style="margin-top: 20px;">
-        <label style="font-size: 0.85em; color: var(--text-muted); font-weight: bold;">حالت نمایش کارت‌ها</label>
-        <div style="display: flex; gap: 10px; margin-top: 10px;">
-          <button class="btn-cancel" style="flex:1;" onclick="setLayout('list')">☰ لیستی</button>
-          <button class="btn-cancel" style="flex:1;" onclick="setLayout('grid')">▦ شبکه‌ای (Grid)</button>
-        </div>
-      </div>
-
-      <div class="btn-row" style="margin-top: 24px;">
-        <button class="btn-submit" onclick="closeSettingsModal()">تأیید و بستن</button>
+      <div class="btn-group">
+        <button class="btn-secondary" onclick="closeTaskModal()">انصراف</button>
+        <button class="btn-main" onclick="saveTask()">💾 ذخیره</button>
       </div>
     </div>
   </div>
@@ -393,10 +428,29 @@
     let currentFilter = 'All';
     let searchQuery = '';
 
+    // TELEGRAM SDK SETUP
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
       tg.expand();
+    }
+
+    // AUDIO SYNTHESIZER (WEB AUDIO API)
+    function playSyntheticSound() {
+      try {
+        const ctx = new (window.AudioContext || window.webkitAudioContext)();
+        const osc = ctx.createOscillator();
+        const gain = ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
+        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
+        gain.gain.setValueAtTime(0.2, ctx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+        osc.start();
+        osc.stop(ctx.currentTime + 0.15);
+      } catch(e) {}
     }
 
     // RELIABLE TELEGRAM USER ID EXTRACTOR
@@ -417,18 +471,17 @@
 
     const userId = getReliableUserId();
 
-    // CONFETTI CELEBRATION
-    function triggerConfetti() {
-      try {
-        confetti({
-          particleCount: 80,
-          spread: 70,
-          origin: { y: 0.8 }
-        });
-      } catch(e) {}
+    // TAB NAVIGATION
+    function switchTab(tabId, el) {
+      tg?.HapticFeedback?.selectionChanged();
+      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
+      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
+      document.getElementById(tabId).classList.add('active');
+      el.classList.add('active');
+      if (tabId === 'tabMatrix') renderMatrix();
     }
 
-    // FETCH STATS & PROFILE
+    // FETCH STATS
     async function fetchStats() {
       if (!userId) return;
       try {
@@ -446,9 +499,9 @@
 
     // FETCH TASKS
     async function fetchTasks() {
-      const container = document.getElementById('tasksContainer');
+      const container = document.getElementById('taskListContainer');
       if (!userId) {
-        container.innerHTML = `<div class="loader" style="color:var(--danger);">⚠️ شناسه کاربر یافت نشد! ربات را دوباره باز کنید.</div>`;
+        container.innerHTML = `<div class="loader" style="color:var(--danger);">⚠️ شناسه کاربر یافت نشد!</div>`;
         return;
       }
 
@@ -456,21 +509,15 @@
         const res = await fetch(`${API_BASE}/tasks?user_id=${userId}`);
         const data = await res.json();
         allTasks = data.tasks || [];
-        updateDashboardCounters();
         renderTasks();
       } catch (err) {
-        container.innerHTML = '<div class="loader" style="color:var(--danger);">⚠️ خطا در ارتباط با سرور!</div>';
+        container.innerHTML = '<div class="loader" style="color:var(--danger);">⚠️ خطا در دریافت اطلاعات از سرور</div>';
       }
-    }
-
-    function updateDashboardCounters() {
-      const activeCount = allTasks.length;
-      document.getElementById('stActive').innerText = activeCount;
     }
 
     function setFilter(filter, el) {
       currentFilter = filter;
-      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
       el.classList.add('active');
       renderTasks();
     }
@@ -481,66 +528,52 @@
     }
 
     function renderTasks() {
-      const container = document.getElementById('tasksContainer');
+      const container = document.getElementById('taskListContainer');
       let filtered = allTasks;
 
-      if (currentFilter === 'Personal') filtered = filtered.filter(t => t.category === 'Personal');
-      if (currentFilter === 'Work') filtered = filtered.filter(t => t.category === 'Work');
-      if (currentFilter === 'Study') filtered = filtered.filter(t => t.category === 'Study');
-      if (currentFilter === 'Urgent') filtered = filtered.filter(t => t.is_urgent === 1);
-
-      if (searchQuery) {
-        filtered = filtered.filter(t => t.title.toLowerCase().includes(searchQuery) || (t.description && t.description.toLowerCase().includes(searchQuery)));
-      }
+      if (currentFilter !== 'All') filtered = filtered.filter(t => t.category === currentFilter);
+      if (searchQuery) filtered = filtered.filter(t => t.title.toLowerCase().includes(searchQuery));
 
       if (filtered.length === 0) {
-        container.innerHTML = '<div class="loader">🎉 هیچ کاری با این فیلتر پیدا نشد!</div>';
+        container.innerHTML = '<div class="loader">🎉 کاری وجود ندارد!</div>';
         return;
       }
 
       const catMap = { "Personal": "شخصی", "Work": "کاری", "Study": "تحصیلی" };
-
       let html = '';
       filtered.forEach(t => {
         const tJson = encodeURIComponent(JSON.stringify(t));
-        const subCount = t.subtasks ? t.subtasks.length : 0;
-        const subDone = t.subtasks ? t.subtasks.filter(s => s.is_done).length : 0;
-
         html += `
-          <div class="glass-panel task-card" id="task-${t.id}">
-            <div class="task-header-row">
-              <span class="task-title">${t.title}</span>
-            </div>
+          <div class="glass task-card" id="task-${t.id}">
+            <div class="task-title">${t.title}</div>
             ${t.description ? `<div class="task-desc">${t.description}</div>` : ''}
-
-            <div class="tags-row">
-              <span class="tag-badge">📁 ${catMap[t.category] || t.category}</span>
-              ${t.is_urgent ? `<span class="tag-badge urgent">🔥 فوری</span>` : ''}
-              ${t.is_important ? `<span class="tag-badge important">⭐ مهم</span>` : ''}
+            <div class="tags-group">
+              <span class="badge">📁 ${catMap[t.category] || t.category}</span>
+              ${t.is_urgent ? `<span class="badge urgent">🔥 فوری</span>` : ''}
+              ${t.is_important ? `<span class="badge important">⭐ مهم</span>` : ''}
             </div>
-
-            ${subCount > 0 ? `
-              <div class="subtask-mini-progress">
-                <span>☑️ زیرکارها</span>
-                <span><b>${subDone}</b> از ${subCount}</span>
-              </div>
-            ` : ''}
-
-            <div class="card-actions">
-              <button class="action-btn done" onclick="markDone(${t.id})"><i class="fas fa-check"></i> انجام شد</button>
-              <button class="action-btn" onclick="openTaskModal('edit', '${tJson}')"><i class="fas fa-pen"></i></button>
-              <button class="action-btn del" onclick="deleteTask(${t.id})"><i class="fas fa-trash"></i></button>
+            <div class="card-footer">
+              <button class="btn-action complete" onclick="markDone(${t.id})"><i class="fas fa-check"></i> انجام شد</button>
+              <button class="btn-action" onclick="openTaskModal('edit', '${tJson}')"><i class="fas fa-pen"></i></button>
+              <button class="btn-action delete" onclick="deleteTask(${t.id})"><i class="fas fa-trash"></i></button>
             </div>
           </div>
         `;
       });
-
       container.innerHTML = html;
+    }
+
+    function renderMatrix() {
+      document.getElementById('mQ1').innerHTML = allTasks.filter(t => t.is_urgent && t.is_important).map(t => `<div style="font-size:0.8em; padding:4px 0;">• ${t.title}</div>`).join('') || '<div style="font-size:0.7em; color:var(--text-sub);">خالی</div>';
+      document.getElementById('mQ2').innerHTML = allTasks.filter(t => !t.is_urgent && t.is_important).map(t => `<div style="font-size:0.8em; padding:4px 0;">• ${t.title}</div>`).join('') || '<div style="font-size:0.7em; color:var(--text-sub);">خالی</div>';
+      document.getElementById('mQ3').innerHTML = allTasks.filter(t => t.is_urgent && !t.is_important).map(t => `<div style="font-size:0.8em; padding:4px 0;">• ${t.title}</div>`).join('') || '<div style="font-size:0.7em; color:var(--text-sub);">خالی</div>';
+      document.getElementById('mQ4').innerHTML = allTasks.filter(t => !t.is_urgent && !t.is_important).map(t => `<div style="font-size:0.8em; padding:4px 0;">• ${t.title}</div>`).join('') || '<div style="font-size:0.7em; color:var(--text-sub);">خالی</div>';
     }
 
     async function markDone(id) {
       tg?.HapticFeedback?.notificationOccurred('success');
-      triggerConfetti();
+      playSyntheticSound();
+      try { confetti({ particleCount: 70, spread: 60, origin: { y: 0.8 } }); } catch(e) {}
 
       const el = document.getElementById(`task-${id}`);
       if (el) el.style.opacity = '0.3';
@@ -553,39 +586,29 @@
     }
 
     async function deleteTask(id) {
-      if (!confirm("آیا از حذف این کار اطمینان دارید؟")) return;
+      if (!confirm("آیا از حذف مطمئن هستید؟")) return;
       tg?.HapticFeedback?.impactOccurred('heavy');
       await fetch(`${API_BASE}/tasks/${id}`, { method: 'DELETE' });
       fetchTasks();
     }
 
     function openTaskModal(mode, tJson = null) {
-      tg?.HapticFeedback?.impactOccurred('light');
       document.getElementById('taskModal').style.display = 'flex';
-
       if (mode === 'add') {
-        document.getElementById('modalTitle').innerText = '➕ افزودن کار جدید';
         document.getElementById('mTaskId').value = '';
         document.getElementById('mTitle').value = '';
         document.getElementById('mDesc').value = '';
-        document.getElementById('mUrgent').checked = false;
-        document.getElementById('mImportant').checked = true;
       } else {
         const t = JSON.parse(decodeURIComponent(tJson));
-        document.getElementById('modalTitle').innerText = '✏️ ویرایش کار';
         document.getElementById('mTaskId').value = t.id;
         document.getElementById('mTitle').value = t.title;
         document.getElementById('mDesc').value = t.description || '';
         document.getElementById('mCat').value = t.category;
         document.getElementById('mPri').value = t.priority;
-        document.getElementById('mUrgent').checked = t.is_urgent === 1;
-        document.getElementById('mImportant').checked = t.is_important === 1;
       }
     }
 
-    function closeTaskModal() {
-      document.getElementById('taskModal').style.display = 'none';
-    }
+    function closeTaskModal() { document.getElementById('taskModal').style.display = 'none'; }
 
     async function saveTask() {
       const id = document.getElementById('mTaskId').value;
@@ -594,61 +617,68 @@
         title: document.getElementById('mTitle').value,
         description: document.getElementById('mDesc').value,
         category: document.getElementById('mCat').value,
-        priority: document.getElementById('mPri').value,
-        is_urgent: document.getElementById('mUrgent').checked ? 1 : 0,
-        is_important: document.getElementById('mImportant').checked ? 1 : 0
+        priority: document.getElementById('mPri').value
       };
 
-      if (!payload.title) {
-        alert("لطفاً عنوان کار را وارد کنید!");
-        return;
-      }
-
+      if (!payload.title) return alert("عنوان را وارد کنید!");
       closeTaskModal();
 
       if (id) {
-        await fetch(`${API_BASE}/tasks`, {
-          method: 'PUT',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify({ ...payload, task_id: parseInt(id) })
-        });
+        await fetch(`${API_BASE}/tasks`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ ...payload, task_id: parseInt(id) }) });
       } else {
-        await fetch(`${API_BASE}/tasks`, {
-          method: 'POST',
-          headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(payload)
-        });
+        await fetch(`${API_BASE}/tasks`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
       }
-
       fetchTasks();
     }
 
-    // SETTINGS ENGINE
-    function openSettingsModal() { document.getElementById('settingsModal').style.display = 'flex'; }
-    function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
+    // LIVE POMODORO TIMER JS
+    let pomoTime = 1500;
+    let pomoInterval = null;
 
-    function applyTheme(themeName, el) {
-      document.body.className = '';
-      if (themeName !== 'default') document.body.classList.add(`theme-${themeName}`);
-      localStorage.setItem('pref_theme', themeName);
-      if (el) {
-        document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
-        el.classList.add('active');
+    function togglePomoTimer() {
+      const btn = document.getElementById('pomoBtn');
+      if (pomoInterval) {
+        clearInterval(pomoInterval);
+        pomoInterval = null;
+        btn.innerText = 'ادامه تمرکز';
+      } else {
+        btn.innerText = 'توقف';
+        pomoInterval = setInterval(() => {
+          if (pomoTime > 0) {
+            pomoTime--;
+            const m = Math.floor(pomoTime / 60).toString().padStart(2, '0');
+            const s = (pomoTime % 60).toString().padStart(2, '0');
+            document.getElementById('pomoTimer').innerText = `${m}:${s}`;
+          } else {
+            clearInterval(pomoInterval);
+            playSyntheticSound();
+            alert("زمان تمرکز به پایان رسید! عالی بود 👏");
+          }
+        }, 1000);
       }
     }
 
-    function setLayout(layout) {
-      const c = document.getElementById('tasksContainer');
-      if (layout === 'grid') c.classList.add('grid-view');
-      else c.classList.remove('grid-view');
-      localStorage.setItem('pref_layout', layout);
+    function resetPomoTimer() {
+      clearInterval(pomoInterval);
+      pomoInterval = null;
+      pomoTime = 1500;
+      document.getElementById('pomoTimer').innerText = '25:00';
+      document.getElementById('pomoBtn').innerText = 'شروع تمرکز';
     }
 
-    // INITIALIZATION
-    const savedTheme = localStorage.getItem('pref_theme') || 'default';
-    applyTheme(savedTheme, null);
-    const savedLayout = localStorage.getItem('pref_layout') || 'list';
-    setLayout(savedLayout);
+    // THEME SWITCHER
+    function selectTheme(name, el) {
+      document.body.className = '';
+      if (name !== 'default') document.body.classList.add(`theme-${name}`);
+      localStorage.setItem('app_theme', name);
+      if (el) {
+        document.querySelectorAll('.theme-card-option').forEach(c => c.classList.remove('selected'));
+        el.classList.add('selected');
+      }
+    }
+
+    const savedTheme = localStorage.getItem('app_theme') || 'default';
+    selectTheme(savedTheme, null);
 
     if (tg?.initDataUnsafe?.user?.first_name) {
       document.getElementById('uName').innerText = `کارهای ${tg.initDataUnsafe.user.first_name}`;
