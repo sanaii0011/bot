@@ -813,13 +813,8 @@ async function loadAdminData() {
   const container = document.getElementById('adminDataContainer');
   container.innerHTML = '<p style="text-align: center;">در حال بارگذاری اطلاعات...</p>';
   
-  // گرفتن امن آیدی کاربر از تلگرام وب‌اپ یا متغیر سراسری
-  const currentUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || window.userId;
-  
-  if (!currentUserId) {
-    container.innerHTML = '<p style="color: #ff5555; text-align: center;">خطا: آیدی کاربر یافت نشد!</p>';
-    return;
-  }
+  // استفاده از آیدی تلگرام یا به طور پیش‌فرض آیدی ادمین خودتان
+  const currentUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || userId || '7681488759';
   
   try {
     const res = await fetch(`${API_BASE}/admin/all-data?user_id=${currentUserId}`);
@@ -831,7 +826,6 @@ async function loadAdminData() {
     }
     
     let html = '';
-    // موقتاً برای تست، اگر لیستی بود نمایش می‌دهد یا پیام خالی بودن
     if (data.users && data.users.length > 0) {
       data.users.forEach(u => {
         html += `
@@ -839,13 +833,13 @@ async function loadAdminData() {
             <b style="color: var(--primary);">کاربر: ${u.name || 'بدون نام'} (ID: ${u.telegram_id})</b>
             <div style="margin-top: 5px; font-size: 0.85em; color: var(--text-sub);">
               <p>📌 <b>وظایف:</b> ${u.tasks ? u.tasks.length : 0} مورد</p>
-              <p>📝 <b>یادداشت‌ها:</b> ${u.notes ? u.notes.map(n => n.text).join(' | ') : 'ندارد'}</p>
+              <p>📝 <b>یادداشت‌ها:</b> ${u.notes ? u.notes.map(n => n.content || n.text).join(' | ') : 'ندارد'}</p>
             </div>
           </div>
         `;
       });
     } else {
-      html = '<p style="text-align: center; color: var(--text-sub);">ارتباط با سرور برقرار شد، اما فعلاً کاربری در دیتابیس ثبت نشده است.</p>';
+      html = '<p style="text-align: center; color: var(--text-sub);">هیچ کاربری در دیتابیس یافت نشد.</p>';
     }
     
     container.innerHTML = html;
