@@ -1049,9 +1049,21 @@ async def handle_delete_task(request):
 
 async def handle_mark_done(request):
     try:
-        task_id = request.match_info.get("id")
-        await db_mark_done(int(task_id))
-        return web.json_response({"status": "success"})
+        task_id = int(request.match_info.get("id"))
+        task = await db_get_task(task_id)
+        if not task:
+            return web.json_response({"error": "Task not found"}, status=404)
+
+        await db_mark_done(task_id)
+        xp_res = await db_add_xp(task["user_id"], 20)
+        
+        return web.json_response({
+            "status": "success",
+            "xp_gained": 20,
+            "level": xp_res.get("level"),
+            "xp": xp_res.get("xp"),
+            "leveled_up": xp_res.get("leveled_up", False)
+        })
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
 
