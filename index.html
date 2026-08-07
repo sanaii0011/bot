@@ -366,6 +366,17 @@
       <div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
     </div>
   </div>
+  
+  <!-- TAB ADMIN: ADMIN PANEL -->
+<div id="tabAdmin" class="tab-content">
+  <div class="glass" style="padding: 20px;">
+    <h3>🛡️ پنل مدیریت</h3>
+    <p style="color: var(--text-sub); font-size: 0.85em; margin-top: 5px;">بخش ابزارهای مدیریتی و کنترل ربات</p>
+    <div style="margin-top: 20px; text-align: center;">
+      <button class="btn-main" onclick="alert('قابلیت‌های مدیریت به زودی تکمیل می‌شوند')">بررسی وضعیت سیستم</button>
+    </div>
+  </div>
+</div>
 
   <!-- TAB 4: CUSTOMIZER & SETTINGS VIEW -->
   <div id="tabSettings" class="tab-content">
@@ -394,6 +405,9 @@
     <div class="nav-item" onclick="switchTab('tabPomo', this)"><i class="fas fa-stopwatch"></i><span>پومودورو</span></div>
     <div class="nav-item" onclick="switchTab('tabNotes', this)"><i class="fas fa-sticky-note"></i><span>یادداشت‌ها</span></div>
     <div class="nav-item" onclick="switchTab('tabSettings', this)"><i class="fas fa-sliders"></i><span>تنظیمات</span></div>
+    <div class="nav-item" id="adminTabNav" style="display:none;" onclick="switchTab('tabAdmin', this)">
+      <i class="fas fa-shield-halved"></i><span>مدیریت</span>
+    </div>
   </div>
 
   <!-- ADD / EDIT TASK MODAL SHEET -->
@@ -440,6 +454,7 @@
 
   <script>
     const API_BASE = "https://bot-kqte.onrender.com/api";
+    const ADMIN_IDS = [7681488759];
     let allTasks = [];
     let currentFilter = 'All';
     let searchQuery = '';
@@ -769,6 +784,13 @@
     fetchStats();
     fetchTasks();
     fetchNotes();
+    // بررسی اینکه آیا کاربر ادمین است یا خیر
+function checkAdminAccess() {
+  if (ADMIN_IDS.includes(parseInt(userId))) {
+    document.getElementById('adminTabNav').style.display = 'flex';
+  }
+}
+checkAdminAccess();
   </script>
 </body>
 </html>
