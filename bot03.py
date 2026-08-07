@@ -352,7 +352,31 @@ async def db_get_admin_stats() -> dict:
             "total_tasks": total_tasks,
             "done_tasks": done_tasks
         }
+
+async def db_get_users_list(page: int = 1, per_page: int = 5):
+    offset = (page - 1) * per_page
+    async with aiosqlite.connect(DB_PATH) as db:
+        # دریافت ۵ کاربر برای صفحه جاری
+        async with db.execute("SELECT user_id, first_name, username, level, xp FROM users LIMIT ? OFFSET ?", (per_page, offset)) as cur:
+            users = await cur.fetchall()
+        # دریافت تعداد کل کاربران
+        async with db.execute("SELECT COUNT(*) FROM users") as cur:
+            total = (await cur.fetchone())[0]
+    return users, total
+
+async def db_get_user_full_details(target_user_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        # دریافت اطلاعات پروفایل کاربر
+        async with db.execute("SELECT * FROM users WHERE user_id = ?", (target_user_id,)) as cur:
+            user = await cur.fetchone()
         
+        # دریافت ۱۰ کاری که این کاربر در ربات ثبت کرده است
+        async with db.execute("SELECT title, status, category FROM tasks WHERE user_id = ? ORDER BY id DESC LIMIT 10", (target_user_id,)) as cur:
+            tasks = await cur.fetchall()
+            
+        return user, tasks
+
 async def db_get_user_profile(user_id: int) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
         async with db.execute("SELECT xp, level FROM users WHERE user_id=?", (user_id,)) as cur:
@@ -1128,15 +1152,13 @@ async def post_init(application: Application):
 async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
     
-    # ۱. بررسی دسترسی مدیر
+    # بررسی دسترسی مدیر
     if user_id != ADMIN_ID:
         await update.message.reply_text("⛔ شما دسترسی مدیریت این ربات را ندارید.")
         return
 
-    # ۲. دریافت آمار زنده دیتابیس
     stats = await db_get_admin_stats()
     
-    # ۳. متن پیام پنل مدیریت
     text = (
         "👑 <b>پنل مدیریت و کنترل ربات</b>\n"
         "───────────────────────\n"
@@ -1145,8 +1167,9 @@ async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
         f"✅ <b>وظایف انجام‌شده:</b> <code>{stats['done_tasks']}</code> عدد\n"
     )
     
-    # ۴. دکمه‌های شیشه‌ای مدیریت
+    # دکمه لیست و نظارت بر کاربران اضافه شد
     kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("👥 لیست و نظارت بر کاربران", callback_data="admin_users_list_1")],
         [InlineKeyboardButton("📦 دانلود فایل پشتیبان (Backup)", callback_data="admin_backup")]
     ])
     
@@ -1173,6 +1196,70 @@ async def cb_admin_backup(update: Update, context: ContextTypes.DEFAULT_TYPE):
             )
     except Exception as e:
         await q.message.reply_text(f"❌ خطا در ارسال بکاپ: {str(e)}")
+
+async def cb_admin_users_list(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    if q.from_user.id != ADMIN_ID:
+        await q.answer("⛔ عدم دسترسی!", show_alert=True)
+        return
+
+    page = int(q.data.split("_")[-1])
+    users, total = await db_get_users_list(page=page)
+    
+    text = f"👥 <b>لیست کاربران ربات (صفحه {page}):</b>\n"
+    text += f"تعداد کل: {total} نفر\n───────────────────────\n"
+    
+    buttons = []
+    for u in users:
+        u_id, f_name, u_name, lvl, xp = u
+        display_name = f_name or u_name or f"کاربر {u_id}"
+        text += f"👤 <b>{display_name}</b> | Lvl {lvl} | ID: <code>{u_id}</code>\n"
+        buttons.append([InlineKeyboardButton(f"🔍 جزئیات: {display_name}", callback_data=f"admin_uinfo_{u_id}")])
+    
+    # دکمه‌های صفحه قبل و بعدی
+    nav_btns = []
+    if page > 1:
+        nav_btns.append(InlineKeyboardButton("◀️ قبلی", callback_data=f"admin_users_list_{page-1}"))
+    if total > page * 5:
+        nav_btns.append(InlineKeyboardButton("بعدی ▶️", callback_data=f"admin_users_list_{page+1}"))
+    
+    if nav_btns:
+        buttons.append(nav_btns)
+        
+    await q.edit_message_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(buttons))
+
+async def cb_admin_user_info(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    if q.from_user.id != ADMIN_ID:
+        await q.answer("⛔ عدم دسترسی!", show_alert=True)
+        return
+
+    target_id = int(q.data.split("_")[-1])
+    user, tasks = await db_get_user_full_details(target_id)
+    
+    if not user:
+        await q.answer("کاربر یافت نشد!", show_alert=True)
+        return
+
+    text = (
+        f"👤 <b>جزئیات کامل کاربر:</b>\n"
+        f"▪️ نام: {user['first_name'] or 'ثبت نشده'}\n"
+        f"▪️ نام کاربری: @{user['username'] if user['username'] else 'ندارد'}\n"
+        f"▪️ شناسه عددی: <code>{user['user_id']}</code>\n"
+        f"▪️ سطح (Level): <code>{user['level']}</code> (XP: {user['xp']})\n"
+        f"───────────────────────\n"
+        f"📋 <b>آخرین کارهای ثبت‌شده توسط کاربر:</b>\n"
+    )
+    
+    if tasks:
+        for t in tasks:
+            status_icon = "✅" if t['status'] == 'done' else "⏳"
+            text += f"{status_icon} <b>{t['title']}</b> ({t['category']})\n"
+    else:
+        text += "هیچ کاری توسط این کاربر ثبت نشده است.\n"
+        
+    kb = InlineKeyboardMarkup([[InlineKeyboardButton("🔙 بازگشت به لیست کاربران", callback_data="admin_users_list_1")]])
+    await q.edit_message_text(text, parse_mode="HTML", reply_markup=kb)
 
 async def main_async():
     await init_db()
@@ -1289,7 +1376,9 @@ async def main_async():
     app.add_handler(CallbackQueryHandler(cb_del_note, pattern=r"^del_note:"))
     app.add_handler(CallbackQueryHandler(cb_toggle_subtask, pattern=r"^toggle_sub:"))
     app.add_handler(CallbackQueryHandler(cb_admin_backup, pattern="^admin_backup$"))
-    
+    app.add_handler(CallbackQueryHandler(cb_admin_users_list, pattern="^admin_users_list_"))
+    app.add_handler(CallbackQueryHandler(cb_admin_user_info, pattern="^admin_uinfo_"))
+
     await start_web_server()
 
     async with app:
