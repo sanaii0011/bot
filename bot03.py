@@ -363,10 +363,11 @@ async def db_export_csv(user_id: int) -> str:
 # KEYBOARDS & UI FORMATTING
 # ═══════════════════════════════════════════════════════════════════════════════
 
-def main_reply_keyboard() -> ReplyKeyboardMarkup:
+def main_reply_keyboard(user_id: Optional[int] = None) -> ReplyKeyboardMarkup:
+    url = f"{WEBAPP_URL}?user_id={user_id}" if user_id else WEBAPP_URL
     kb = [
         [KeyboardButton("➕ افزودن کار جدید"), KeyboardButton("⚡ ثبت سریع کار")],
-        [KeyboardButton("📋 کارهای فعال من"), KeyboardButton("🌐 وب‌اپ کارهای من", web_app=WebAppInfo(url=WEBAPP_URL))],
+        [KeyboardButton("📋 کارهای فعال من"), KeyboardButton("🌐 وب‌اپ کارهای من", web_app=WebAppInfo(url=url))],
         [KeyboardButton("🍅 پومودورو تمرکز"), KeyboardButton("🌱 ردیاب عادت‌ها")],
         [KeyboardButton("📐 ماتریس آیزنهاور"), KeyboardButton("📝 دفترچه یادداشت Notion")],
         [KeyboardButton("🏆 پروفایل & مدال‌ها"), KeyboardButton("📊 گزارش CSV")],
@@ -665,18 +666,9 @@ async def cmd_start(update: Update, _: ContextTypes.DEFAULT_TYPE):
         "🚀 <b>به سیستم مدیریت وظایف پیشرفته خوش آمدید!</b>\n"
         "───────────────────────\n"
         "طراحی‌شده بر اساس استانداردهای جهانی <b>Notion</b>، <b>Todoist</b>، <b>تکنیک پومودورو</b> و <b>ماتریس آیزنهاور</b>.\n\n"
-        "💡 <b>راهنمای کلیدها:</b>\n"
-        "▫️ <b>➕ افزودن کار جدید:</b> ثبت گام‌به‌گام همراه با امکان بازگشت به مراحل قبل.\n"
-        "▫️ <b>🌐 وب‌اپ کارهای من:</b> مدیریت آنلاین، لایو و گرافیکی کارهایتان.\n"
-        "▫️ <b>⚡ ثبت سریع کار:</b> ارسال ورودی تک‌خطی مثل: <code>خرید کتاب #تحصیلی !ضروری @18:30</code>\n"
-        "▫️ <b>🍅 پومودورو تمرکز:</b> ثبت زمان‌های ۲۵ دقیقه‌ای تمرکز عمیق.\n"
-        "▫️ <b>🌱 ردیاب عادت‌ها:</b> محاسبه استمرار انجام عادت‌های روزانه.\n"
-        "▫️ <b>📐 ماتریس آیزنهاور:</b> فیلتر کارهای فوری و مهم.\n"
-        "▫️ <b>📝 دفترچه یادداشت Notion:</b> یادداشت‌برداری سریع.\n"
-        "▫️ <b>🏆 پروفایل & مدال‌ها:</b> مشاهده سطح، XP و نشان‌های افتخار.\n\n"
         "👇 <i>از کیبورد زیر برای هدایت استفاده کنید:</i>"
     )
-    await update.message.reply_text(text, parse_mode="HTML", reply_markup=main_reply_keyboard())
+    await update.message.reply_text(text, parse_mode="HTML", reply_markup=main_reply_keyboard(update.effective_user.id))
 
 
 async def cmd_cancel(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
