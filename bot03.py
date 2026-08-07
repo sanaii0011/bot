@@ -162,6 +162,8 @@ async def init_db():
         await db.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id     INTEGER PRIMARY KEY,
+                first_name  TEXT,
+                username    TEXT,
                 xp          INTEGER DEFAULT 0,
                 level       INTEGER DEFAULT 1
             )
@@ -329,11 +331,6 @@ async def db_get_notes(user_id: int) -> list[dict]:
         db.row_factory = aiosqlite.Row
         async with db.execute("SELECT * FROM notes WHERE user_id=? ORDER BY id DESC LIMIT 20", (user_id,)) as cur:
             return [dict(r) for r in await cur.fetchall()]
-
-async def db_delete_note(note_id: int):
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("DELETE FROM notes WHERE id=?", (note_id,))
-        await db.commit()
 
 # --- DB HELPERS: GAMIFICATION & EXPORT ---
 
