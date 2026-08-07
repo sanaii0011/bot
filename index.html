@@ -3,189 +3,330 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>مدیریت پیشرفته کارها</title>
+  <title>داشبورد پیشرفته مدیریت وظایف</title>
+  
+  <!-- Telegram WebApp SDK -->
   <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <!-- FontAwesome 6 -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
+  <!-- Google Fonts: Vazirmatn -->
+  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+  <!-- Canvas Confetti CDN -->
+  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
+
   <style>
+    /* ==========================================
+       THEMES & CUSTOMIZATION ENGINE
+       ========================================== */
     :root {
-      --bg-color: var(--tg-theme-bg-color, #0f172a);
-      --text-color: var(--tg-theme-text-color, #f8fafc);
-      --card-bg: var(--tg-theme-secondary-bg-color, #1e293b);
-      --primary: var(--tg-theme-button-color, #3b82f6);
-      --primary-text: var(--tg-theme-button-text-color, #ffffff);
-      --hint-color: var(--tg-theme-hint-color, #94a3b8);
-      --accent: #8b5cf6;
-      --danger: #ef4444;
+      --font-main: 'Vazirmatn', -apple-system, BlinkMacSystemFont, sans-serif;
+      --accent-color: #6366f1;
+      --accent-gradient: linear-gradient(135deg, #6366f1, #8b5cf6);
+      --bg-color: #0f172a;
+      --card-bg: rgba(30, 41, 59, 0.7);
+      --card-border: rgba(255, 255, 255, 0.08);
+      --text-main: #f8fafc;
+      --text-muted: #94a3b8;
       --success: #10b981;
       --warning: #f59e0b;
+      --danger: #ef4444;
+      --radius: 18px;
     }
 
+    /* Theme: Cyberpunk Neon */
+    body.theme-cyberpunk {
+      --bg-color: #05050f;
+      --card-bg: rgba(20, 15, 35, 0.85);
+      --card-border: rgba(236, 72, 153, 0.3);
+      --accent-color: #ec4899;
+      --accent-gradient: linear-gradient(135deg, #ec4899, #8b5cf6);
+      --text-main: #ffffff;
+      --text-muted: #a78bfa;
+    }
+
+    /* Theme: AMOLED Pure Black */
+    body.theme-amoled {
+      --bg-color: #000000;
+      --card-bg: #121212;
+      --card-border: #262626;
+      --accent-color: #3b82f6;
+      --accent-gradient: linear-gradient(135deg, #2563eb, #1d4ed8);
+      --text-main: #ffffff;
+      --text-muted: #737373;
+    }
+
+    /* Theme: Emerald Forest */
+    body.theme-emerald {
+      --bg-color: #064e3b;
+      --card-bg: rgba(6, 78, 59, 0.6);
+      --card-border: rgba(52, 211, 153, 0.2);
+      --accent-color: #10b981;
+      --accent-gradient: linear-gradient(135deg, #10b981, #059669);
+      --text-main: #ecfdf5;
+      --text-muted: #6ee7b7;
+    }
+
+    /* Theme: Sunset Neon */
+    body.theme-sunset {
+      --bg-color: #2e1065;
+      --card-bg: rgba(88, 28, 135, 0.5);
+      --card-border: rgba(244, 63, 94, 0.2);
+      --accent-color: #f43f5e;
+      --accent-gradient: linear-gradient(135deg, #f43f5e, #fb923c);
+      --text-main: #fff1f2;
+      --text-muted: #fda4af;
+    }
+
+    /* BASE STYLES */
+    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
     body {
-      font-family: 'Segoe UI', Tahoma, sans-serif;
+      font-family: var(--font-main);
       background-color: var(--bg-color);
-      color: var(--text-color);
-      margin: 0; padding: 16px; direction: rtl;
-      user-select: none;
-      -webkit-tap-highlight-color: transparent;
+      color: var(--text-main);
+      padding: 16px;
+      padding-bottom: 90px;
+      direction: rtl;
+      min-height: 100vh;
+      transition: background-color 0.4s ease, color 0.4s ease;
     }
 
-    /* Gamification Header Card */
-    .profile-card {
-      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
-      border: 1px solid rgba(255, 255, 255, 0.1);
-      backdrop-filter: blur(10px);
-      border-radius: 16px; padding: 16px; margin-bottom: 20px;
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    /* GLASSMORPHISM CARD CONTAINER */
+    .glass-panel {
+      background: var(--card-bg);
+      border: 1px solid var(--card-border);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      border-radius: var(--radius);
+      padding: 16px;
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
     }
-    .profile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
-    .user-info h3 { margin: 0; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
-    .badge-pill { background: rgba(139, 92, 246, 0.3); color: #c084fc; font-size: 0.75em; padding: 3px 10px; border-radius: 12px; border: 1px solid rgba(192, 132, 252, 0.3); }
+
+    /* HEADER & USER PROFILE GAMIFICATION */
+    .header-card {
+      position: relative;
+      overflow: hidden;
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, rgba(255,255,255,0.05), rgba(255,255,255,0.01));
+      border: 1px solid var(--card-border);
+    }
+    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .user-info { display: flex; align-items: center; gap: 12px; }
+    .avatar-box {
+      width: 48px; height: 48px; border-radius: 14px; background: var(--accent-gradient);
+      display: flex; justify-content: center; align-items: center; font-size: 20px; color: white;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3); font-weight: bold;
+    }
+    .user-title h2 { font-size: 1.1em; font-weight: 800; margin: 0; }
+    .user-title span { font-size: 0.75em; color: var(--text-muted); }
     
-    .xp-bar-container { background: rgba(0, 0, 0, 0.3); border-radius: 10px; height: 10px; width: 100%; overflow: hidden; position: relative; }
-    .xp-bar-fill { background: linear-gradient(90deg, #3b82f6, #10b981); height: 100%; width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
-    .xp-stats { display: flex; justify-content: space-between; font-size: 0.75em; color: var(--hint-color); margin-top: 6px; }
+    .settings-btn {
+      background: rgba(255,255,255,0.08); border: 1px solid var(--card-border); color: var(--text-main);
+      width: 40px; height: 40px; border-radius: 12px; display: flex; justify-content: center; align-items: center;
+      cursor: pointer; transition: transform 0.2s;
+    }
+    .settings-btn:active { transform: scale(0.9) rotate(45deg); }
 
-    /* Category Filter Tabs */
-    .filter-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px; scrollbar-width: none; }
-    .filter-tabs::-webkit-scrollbar { display: none; }
-    .tab-btn { background: var(--card-bg); color: var(--hint-color); border: 1px solid rgba(255,255,255,0.05); padding: 8px 14px; border-radius: 20px; font-size: 0.85em; white-space: nowrap; cursor: pointer; transition: all 0.2s; }
-    .tab-btn.active { background: var(--primary); color: var(--primary-text); font-weight: bold; }
+    /* XP PROGRESS RING & BAR */
+    .xp-section { margin-top: 10px; }
+    .xp-bar-bg { background: rgba(0, 0, 0, 0.3); border-radius: 10px; height: 10px; overflow: hidden; position: relative; }
+    .xp-bar-fill { background: var(--accent-gradient); height: 100%; width: 0%; transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
+    .xp-labels { display: flex; justify-content: space-between; font-size: 0.75em; color: var(--text-muted); margin-top: 6px; font-weight: 600; }
 
-    /* Task Card Animations */
+    /* DASHBOARD STATS ROW */
+    .stats-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 20px; }
+    .stat-card { text-align: center; padding: 12px 8px; }
+    .stat-card .num { font-size: 1.2em; font-weight: 800; color: var(--accent-color); }
+    .stat-card .label { font-size: 0.7em; color: var(--text-muted); margin-top: 2px; }
+
+    /* SEARCH & FILTER CONTROLS */
+    .controls-panel { margin-bottom: 20px; display: flex; flex-direction: column; gap: 12px; }
+    .search-box {
+      position: relative; width: 100%;
+    }
+    .search-box input {
+      width: 100%; padding: 12px 40px 12px 14px; border-radius: 12px;
+      border: 1px solid var(--card-border); background: rgba(0, 0, 0, 0.2);
+      color: var(--text-main); font-family: inherit; font-size: 0.9em; outline: none;
+    }
+    .search-box i { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-muted); }
+
+    .filter-scroll { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
+    .filter-scroll::-webkit-scrollbar { display: none; }
+    .filter-chip {
+      background: rgba(255,255,255,0.05); border: 1px solid var(--card-border);
+      color: var(--text-muted); padding: 8px 16px; border-radius: 20px; font-size: 0.8em;
+      white-space: nowrap; cursor: pointer; transition: all 0.2s; font-weight: 600;
+    }
+    .filter-chip.active { background: var(--accent-gradient); color: white; border-color: transparent; box-shadow: 0 4px 12px rgba(0,0,0,0.3); }
+
+    /* TASK CARDS GRID & LIST VIEW */
+    .tasks-container { display: flex; flex-direction: column; gap: 12px; }
+    .tasks-container.grid-view { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; }
+
     .task-card {
-      background: var(--card-bg); border-radius: 14px; padding: 14px; margin-bottom: 12px;
-      border: 1px solid rgba(255, 255, 255, 0.05);
-      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
-      animation: slideUp 0.3s ease-out forwards;
-      transition: transform 0.2s, opacity 0.3s;
+      position: relative; transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+      animation: popIn 0.35s ease-out forwards;
     }
-    @keyframes slideUp {
-      from { opacity: 0; transform: translateY(15px); }
-      to { opacity: 1; transform: translateY(0); }
+    @keyframes popIn { from { opacity: 0; transform: translateY(20px) scale(0.96); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    .task-card:active { transform: scale(0.98); }
+
+    .task-header-row { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .task-title { font-weight: 700; font-size: 0.95em; line-height: 1.4; color: var(--text-main); }
+    .task-desc { font-size: 0.8em; color: var(--text-muted); margin: 6px 0 10px 0; line-height: 1.5; }
+
+    /* BADGES & Eisenhower MATRIX TAGS */
+    .tags-row { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 12px; }
+    .tag-badge { padding: 3px 8px; border-radius: 6px; font-size: 0.7em; font-weight: 600; background: rgba(255,255,255,0.06); }
+    .tag-badge.urgent { background: rgba(239, 68, 68, 0.2); color: #fca5a5; border: 1px solid rgba(239, 68, 68, 0.3); }
+    .tag-badge.important { background: rgba(245, 158, 11, 0.2); color: #fde047; border: 1px solid rgba(245, 158, 11, 0.3); }
+
+    /* SUBTASK PROGRESS IN CARD */
+    .subtask-mini-progress {
+      margin-bottom: 10px; background: rgba(0,0,0,0.2); padding: 6px 10px; border-radius: 8px; font-size: 0.75em;
+      display: flex; justify-content: space-between; align-items: center; color: var(--text-muted);
     }
-    .task-card.completing { transform: scale(0.95); opacity: 0; }
 
-    .task-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
-    .task-title { font-weight: 600; font-size: 1em; line-height: 1.4; }
-    .task-desc { font-size: 0.85em; color: var(--hint-color); margin: 8px 0; }
-
-    .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
-    .badge { padding: 3px 8px; border-radius: 6px; font-size: 0.7em; background: rgba(255,255,255,0.05); }
-    .badge.high { border-right: 3px solid var(--danger); background: rgba(239, 68, 68, 0.1); }
-    .badge.med { border-right: 3px solid var(--warning); background: rgba(245, 158, 11, 0.1); }
-    .badge.low { border-right: 3px solid var(--success); background: rgba(16, 185, 129, 0.1); }
-
-    .card-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; }
-    .btn-icon { background: rgba(255,255,255,0.05); border: none; padding: 8px 12px; border-radius: 8px; color: var(--text-color); cursor: pointer; transition: 0.2s; font-size: 0.9em; }
-    .btn-icon.done { background: rgba(16, 185, 129, 0.15); color: var(--success); }
-    .btn-icon.del { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
-    .btn-icon:active { transform: scale(0.9); }
-
-    /* Floating Action Button (FAB) */
-    .fab {
-      position: fixed; bottom: 24px; left: 24px; width: 56px; height: 56px;
-      background: linear-gradient(135deg, var(--primary), var(--accent)); color: white;
-      border-radius: 50%; display: flex; justify-content: center; align-items: center;
-      font-size: 22px; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4); cursor: pointer; border: none;
-      z-index: 90; transition: transform 0.2s;
+    .card-actions { display: flex; gap: 8px; justify-content: flex-end; border-top: 1px solid var(--card-border); padding-top: 10px; }
+    .action-btn {
+      background: rgba(255,255,255,0.06); border: none; padding: 8px 12px; border-radius: 10px;
+      color: var(--text-main); font-size: 0.8em; cursor: pointer; display: flex; align-items: center; gap: 6px;
+      font-family: inherit; font-weight: 600; transition: background 0.2s;
     }
-    .fab:active { transform: scale(0.9) rotate(90deg); }
+    .action-btn.done { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
+    .action-btn.del { background: rgba(239, 68, 68, 0.2); color: #fca5a5; }
 
-    /* XP Pop-up Toast */
-    .xp-toast {
-      position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
-      background: linear-gradient(135deg, #10b981, #059669); color: white;
-      padding: 12px 24px; border-radius: 30px; font-weight: bold; font-size: 0.95em;
-      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); z-index: 2000;
-      display: flex; align-items: center; gap: 8px;
-      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    /* FAB ADD BUTTON */
+    .fab-btn {
+      position: fixed; bottom: 24px; left: 24px; width: 60px; height: 60px;
+      background: var(--accent-gradient); color: white; border-radius: 50%;
+      display: flex; justify-content: center; align-items: center; font-size: 24px;
+      box-shadow: 0 10px 25px rgba(0, 0, 0, 0.4); cursor: pointer; border: none;
+      z-index: 100; transition: transform 0.2s;
     }
-    .xp-toast.show { transform: translateX(-50%) translateY(0); }
+    .fab-btn:active { transform: scale(0.9) rotate(90deg); }
 
-    /* Modal Styling */
+    /* MODAL SHEETS */
     .modal-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7);
-      backdrop-filter: blur(5px); display: none; justify-content: center; align-items: flex-end; z-index: 1000;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.75);
+      backdrop-filter: blur(8px); display: none; justify-content: center; align-items: flex-end; z-index: 1000;
     }
-    .modal {
-      background: var(--card-bg); width: 100%; max-width: 450px; border-radius: 24px 24px 0 0; padding: 24px;
-      box-shadow: 0 -10px 30px rgba(0,0,0,0.3); animation: slideUpModal 0.3s ease-out;
+    .modal-sheet {
+      background: var(--bg-color); border: 1px solid var(--card-border); width: 100%; max-width: 500px;
+      border-radius: 28px 28px 0 0; padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.5);
+      animation: slideUp 0.3s ease-out; max-height: 90vh; overflow-y: auto;
     }
-    @keyframes slideUpModal { from { transform: translateY(100%); } to { transform: translateY(0); } }
-    .form-group { margin-bottom: 14px; }
-    .form-group label { display: block; margin-bottom: 6px; font-size: 0.85em; color: var(--hint-color); }
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
-      background: rgba(0,0,0,0.2); color: var(--text-color); box-sizing: border-box; font-family: inherit;
-    }
-    .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-    .btn { flex: 1; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
-    .btn-primary { background: var(--primary); color: var(--primary-text); }
-    .btn-cancel { background: rgba(255,255,255,0.1); color: var(--text-color); }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
 
-    .loader { text-align: center; color: var(--hint-color); padding: 40px 0; }
+    .form-group { margin-bottom: 16px; }
+    .form-group label { display: block; margin-bottom: 6px; font-size: 0.85em; color: var(--text-muted); font-weight: 600; }
+    .form-group input, .form-group select, .form-group textarea {
+      width: 100%; padding: 12px; border-radius: 12px; border: 1px solid var(--card-border);
+      background: rgba(0,0,0,0.3); color: var(--text-main); font-family: inherit; outline: none; font-size: 0.9em;
+    }
+    .toggle-row { display: flex; justify-content: space-between; align-items: center; background: rgba(255,255,255,0.04); padding: 12px; border-radius: 12px; margin-bottom: 10px; }
+
+    .btn-row { display: flex; gap: 10px; margin-top: 20px; }
+    .btn-submit { flex: 1; padding: 14px; border: none; border-radius: 14px; background: var(--accent-gradient); color: white; font-weight: bold; cursor: pointer; font-family: inherit; }
+    .btn-cancel { flex: 1; padding: 14px; border: none; border-radius: 14px; background: rgba(255,255,255,0.1); color: var(--text-main); font-weight: bold; cursor: pointer; font-family: inherit; }
+
+    /* CUSTOMIZATION OPTIONS IN SETTINGS */
+    .theme-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
+    .theme-card {
+      padding: 12px; border-radius: 12px; border: 2px solid transparent; background: rgba(255,255,255,0.05);
+      cursor: pointer; text-align: center; font-size: 0.85em; font-weight: 600;
+    }
+    .theme-card.active { border-color: var(--accent-color); background: rgba(255,255,255,0.12); }
+
+    .loader { text-align: center; color: var(--text-muted); padding: 50px 0; }
   </style>
 </head>
-<body>
+<body class="theme-default">
 
-  <!-- XP Toast Notification -->
-  <div id="xpToast" class="xp-toast"><i class="fas fa-trophy"></i> <span id="xpToastText">+۲۰ امتیاز XP دریافت شد!</span></div>
-
-  <!-- Gamification Profile Header -->
-  <div class="profile-card">
-    <div class="profile-header">
+  <!-- HEADER GAMIFICATION PANEL -->
+  <div class="glass-panel header-card">
+    <div class="header-top">
       <div class="user-info">
-        <h3 id="userName">کارهای من <span id="userBadge" class="badge-pill">🌱 تازه کار</span></h3>
+        <div class="avatar-box" id="uAvatar"><i class="fas fa-user-ninja"></i></div>
+        <div class="user-title">
+          <h2 id="uName">کارهای من</h2>
+          <span id="uBadge">🌱 تازه کار (Level 1)</span>
+        </div>
       </div>
-      <div style="text-align: left;">
-        <span style="font-size: 0.8em; color: var(--hint-color);">سطح</span>
-        <strong id="userLevel" style="font-size: 1.1em; color: var(--accent); display: block;">Lvl 1</strong>
+      <button class="settings-btn" onclick="openSettingsModal()"><i class="fas fa-sliders"></i></button>
+    </div>
+
+    <!-- XP BAR -->
+    <div class="xp-section">
+      <div class="xp-bar-bg">
+        <div class="xp-bar-fill" id="xpFill"></div>
+      </div>
+      <div class="xp-labels">
+        <span>پیشرفت سطح</span>
+        <span id="xpText">0 / 100 XP</span>
       </div>
     </div>
-    <div class="xp-bar-container">
-      <div id="xpFill" class="xp-bar-fill"></div>
+  </div>
+
+  <!-- DASHBOARD STATS -->
+  <div class="stats-row">
+    <div class="glass-panel stat-card">
+      <div class="num" id="stActive">0</div>
+      <div class="label">کارهای فعال</div>
     </div>
-    <div class="xp-stats">
-      <span>پیشرفت مرحله</span>
-      <span id="xpText">0 / 100 XP</span>
+    <div class="glass-panel stat-card">
+      <div class="num" id="stDone">0</div>
+      <div class="label">انجام‌شده</div>
+    </div>
+    <div class="glass-panel stat-card">
+      <div class="num" id="stRatio">0%</div>
+      <div class="label">بازدهی</div>
     </div>
   </div>
 
-  <!-- Filter Tabs -->
-  <div class="filter-tabs">
-    <button class="tab-btn active" onclick="filterTasks('All', this)">🌐 همه</button>
-    <button class="tab-btn" onclick="filterTasks('Personal', this)">👤 شخصی</button>
-    <button class="tab-btn" onclick="filterTasks('Work', this)">💼 کاری</button>
-    <button class="tab-btn" onclick="filterTasks('Study', this)">📚 تحصیلی</button>
+  <!-- CONTROLS: SEARCH & CATEGORY FILTERS -->
+  <div class="controls-panel">
+    <div class="search-box">
+      <i class="fas fa-search"></i>
+      <input type="text" id="searchInput" placeholder="جستجوی سریع کارها..." oninput="onSearchChange()">
+    </div>
+
+    <div class="filter-scroll">
+      <button class="filter-chip active" onclick="setFilter('All', this)">🌐 همه</button>
+      <button class="filter-chip" onclick="setFilter('Personal', this)">👤 شخصی</button>
+      <button class="filter-chip" onclick="setFilter('Work', this)">💼 کاری</button>
+      <button class="filter-chip" onclick="setFilter('Study', this)">📚 تحصیلی</button>
+      <button class="filter-chip" onclick="setFilter('Urgent', this)">🔥 فوری/ضروری</button>
+    </div>
   </div>
 
-  <!-- Task Container -->
-  <div id="tasks-container">
-    <div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>در حال بارگذاری...</div>
+  <!-- TASKS CONTAINER -->
+  <div id="tasksContainer" class="tasks-container">
+    <div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>در حال همگام‌سازی اطلاعات...</div>
   </div>
 
-  <button class="fab" onclick="openModal('add')"><i class="fas fa-plus"></i></button>
+  <!-- FAB ADD BUTTON -->
+  <button class="fab-btn" onclick="openTaskModal('add')"><i class="fas fa-plus"></i></button>
 
-  <!-- Task Modal -->
+  <!-- ADD / EDIT TASK MODAL SHEET -->
   <div class="modal-overlay" id="taskModal">
-    <div class="modal">
-      <h3 id="modalTitle" style="margin-top:0;">➕ افزودن کار جدید</h3>
-      <input type="hidden" id="taskId">
-      
+    <div class="modal-sheet">
+      <h3 id="modalTitle" style="margin-bottom: 16px;">➕ افزودن کار جدید</h3>
+      <input type="hidden" id="mTaskId">
+
       <div class="form-group">
         <label>عنوان کار *</label>
-        <input type="text" id="tTitle" placeholder="مثلا: مطالعه فصل سوم...">
+        <input type="text" id="mTitle" placeholder="مثلاً: طراحی لوگو پروژه...">
       </div>
-      
+
       <div class="form-group">
-        <label>توضیحات (اختیاری)</label>
-        <textarea id="tDesc" rows="2" placeholder="جزئیات بیشتر..."></textarea>
+        <label>توضیحات تکمیلی</label>
+        <textarea id="mDesc" rows="3" placeholder="جزئیات بیشتر..."></textarea>
       </div>
 
       <div style="display: flex; gap: 10px;">
         <div class="form-group" style="flex: 1;">
           <label>دسته‌بندی</label>
-          <select id="tCat">
+          <select id="mCat">
             <option value="Personal">👤 شخصی</option>
             <option value="Work">💼 کاری</option>
             <option value="Study">📚 تحصیلی</option>
@@ -193,7 +334,7 @@
         </div>
         <div class="form-group" style="flex: 1;">
           <label>اولویت</label>
-          <select id="tPri">
+          <select id="mPri">
             <option value="High">🚨 ضروری</option>
             <option value="Medium" selected>🟡 معمولی</option>
             <option value="Low">🟢 کم</option>
@@ -201,9 +342,47 @@
         </div>
       </div>
 
-      <div class="modal-actions">
-        <button class="btn btn-cancel" onclick="closeModal()">انصراف</button>
-        <button class="btn btn-primary" onclick="saveTask()">💾 ذخیره</button>
+      <!-- EISENHOWER TOGGLES -->
+      <div class="toggle-row">
+        <span>🔥 آیا این کار <b>فوری</b> است؟</span>
+        <input type="checkbox" id="mUrgent" style="width: 20px; height: 20px;">
+      </div>
+      <div class="toggle-row">
+        <span>⭐ آیا این کار <b>مهم</b> است؟</span>
+        <input type="checkbox" id="mImportant" checked style="width: 20px; height: 20px;">
+      </div>
+
+      <div class="btn-row">
+        <button class="btn-cancel" onclick="closeTaskModal()">انصراف</button>
+        <button class="btn-submit" onclick="saveTask()">💾 ذخیره کار</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- SETTINGS & CUSTOMIZATION MODAL -->
+  <div class="modal-overlay" id="settingsModal">
+    <div class="modal-sheet">
+      <h3 style="margin-bottom: 16px;">⚙️ تنظیمات و شخصی‌سازی</h3>
+
+      <label style="font-size: 0.85em; color: var(--text-muted); font-weight: bold;">پوسته و تم گرافیکی</label>
+      <div class="theme-grid">
+        <div class="theme-card" onclick="applyTheme('default', this)">🌌 پیش‌فرض دارک</div>
+        <div class="theme-card" onclick="applyTheme('cyberpunk', this)">⚡ سایبرپانک</div>
+        <div class="theme-card" onclick="applyTheme('amoled', this)">🖤 مشکی AMOLED</div>
+        <div class="theme-card" onclick="applyTheme('emerald', this)">🌲 زمردی</div>
+        <div class="theme-card" onclick="applyTheme('sunset', this)">🌅 غروب</div>
+      </div>
+
+      <div style="margin-top: 20px;">
+        <label style="font-size: 0.85em; color: var(--text-muted); font-weight: bold;">حالت نمایش کارت‌ها</label>
+        <div style="display: flex; gap: 10px; margin-top: 10px;">
+          <button class="btn-cancel" style="flex:1;" onclick="setLayout('list')">☰ لیستی</button>
+          <button class="btn-cancel" style="flex:1;" onclick="setLayout('grid')">▦ شبکه‌ای (Grid)</button>
+        </div>
+      </div>
+
+      <div class="btn-row" style="margin-top: 24px;">
+        <button class="btn-submit" onclick="closeSettingsModal()">تأیید و بستن</button>
       </div>
     </div>
   </div>
@@ -212,6 +391,7 @@
     const API_BASE = "https://bot-kqte.onrender.com/api";
     let allTasks = [];
     let currentFilter = 'All';
+    let searchQuery = '';
 
     const tg = window.Telegram?.WebApp;
     if (tg) {
@@ -219,6 +399,7 @@
       tg.expand();
     }
 
+    // RELIABLE TELEGRAM USER ID EXTRACTOR
     function getReliableUserId() {
       if (tg?.initDataUnsafe?.user?.id) return tg.initDataUnsafe.user.id;
       const urlParams = new URLSearchParams(window.location.search);
@@ -236,18 +417,18 @@
 
     const userId = getReliableUserId();
 
-    if (tg?.initDataUnsafe?.user?.first_name) {
-      document.getElementById('userName').childNodes[0].nodeValue = `کارهای ${tg.initDataUnsafe.user.first_name} `;
+    // CONFETTI CELEBRATION
+    function triggerConfetti() {
+      try {
+        confetti({
+          particleCount: 80,
+          spread: 70,
+          origin: { y: 0.8 }
+        });
+      } catch(e) {}
     }
 
-    function showXPToast(text) {
-      const toast = document.getElementById('xpToast');
-      document.getElementById('xpToastText').innerText = text;
-      toast.classList.add('show');
-      tg?.HapticFeedback?.notificationOccurred('success');
-      setTimeout(() => toast.classList.remove('show'), 3000);
-    }
-
+    // FETCH STATS & PROFILE
     async function fetchStats() {
       if (!userId) return;
       try {
@@ -255,19 +436,19 @@
         const data = await res.json();
         if (data.profile) {
           const p = data.profile;
-          document.getElementById('userLevel').innerText = `Lvl ${p.level}`;
-          document.getElementById('userBadge').innerText = p.badge;
-          const currentXpProgress = p.xp % 100;
-          document.getElementById('xpFill').style.width = `${currentXpProgress}%`;
-          document.getElementById('xpText').innerText = `${currentXpProgress} / 100 XP (کل: ${p.xp})`;
+          document.getElementById('uBadge').innerText = `${p.badge} (Level ${p.level})`;
+          const progress = p.xp % 100;
+          document.getElementById('xpFill').style.width = `${progress}%`;
+          document.getElementById('xpText').innerText = `${progress} / 100 XP (کل: ${p.xp})`;
         }
       } catch(e) {}
     }
 
+    // FETCH TASKS
     async function fetchTasks() {
-      const container = document.getElementById('tasks-container');
+      const container = document.getElementById('tasksContainer');
       if (!userId) {
-        container.innerHTML = `<div class="loader" style="color:var(--danger);">⚠️ شناسه کاربر یافت نشد!</div>`;
+        container.innerHTML = `<div class="loader" style="color:var(--danger);">⚠️ شناسه کاربر یافت نشد! ربات را دوباره باز کنید.</div>`;
         return;
       }
 
@@ -275,114 +456,147 @@
         const res = await fetch(`${API_BASE}/tasks?user_id=${userId}`);
         const data = await res.json();
         allTasks = data.tasks || [];
+        updateDashboardCounters();
         renderTasks();
       } catch (err) {
-        container.innerHTML = '<div class="loader" style="color:var(--danger);">⚠️ خطا در ارتباط با سرور</div>';
+        container.innerHTML = '<div class="loader" style="color:var(--danger);">⚠️ خطا در ارتباط با سرور!</div>';
       }
     }
 
-    function filterTasks(cat, btn) {
-      currentFilter = cat;
-      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-      btn.classList.add('active');
+    function updateDashboardCounters() {
+      const activeCount = allTasks.length;
+      document.getElementById('stActive').innerText = activeCount;
+    }
+
+    function setFilter(filter, el) {
+      currentFilter = filter;
+      document.querySelectorAll('.filter-chip').forEach(c => c.classList.remove('active'));
+      el.classList.add('active');
+      renderTasks();
+    }
+
+    function onSearchChange() {
+      searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
       renderTasks();
     }
 
     function renderTasks() {
-      const container = document.getElementById('tasks-container');
-      const filtered = currentFilter === 'All' ? allTasks : allTasks.filter(t => t.category === currentFilter);
+      const container = document.getElementById('tasksContainer');
+      let filtered = allTasks;
+
+      if (currentFilter === 'Personal') filtered = filtered.filter(t => t.category === 'Personal');
+      if (currentFilter === 'Work') filtered = filtered.filter(t => t.category === 'Work');
+      if (currentFilter === 'Study') filtered = filtered.filter(t => t.category === 'Study');
+      if (currentFilter === 'Urgent') filtered = filtered.filter(t => t.is_urgent === 1);
+
+      if (searchQuery) {
+        filtered = filtered.filter(t => t.title.toLowerCase().includes(searchQuery) || (t.description && t.description.toLowerCase().includes(searchQuery)));
+      }
 
       if (filtered.length === 0) {
-        container.innerHTML = '<div class="loader">🎉 هیچ کاری در این بخش یافت نشد!</div>';
+        container.innerHTML = '<div class="loader">🎉 هیچ کاری با این فیلتر پیدا نشد!</div>';
         return;
       }
 
       const catMap = { "Personal": "شخصی", "Work": "کاری", "Study": "تحصیلی" };
-      const priClass = { "High": "high", "Medium": "med", "Low": "low" };
 
       let html = '';
       filtered.forEach(t => {
-        const taskJson = encodeURIComponent(JSON.stringify(t));
+        const tJson = encodeURIComponent(JSON.stringify(t));
+        const subCount = t.subtasks ? t.subtasks.length : 0;
+        const subDone = t.subtasks ? t.subtasks.filter(s => s.is_done).length : 0;
+
         html += `
-          <div class="task-card" id="task-${t.id}">
-            <div class="task-header">
+          <div class="glass-panel task-card" id="task-${t.id}">
+            <div class="task-header-row">
               <span class="task-title">${t.title}</span>
             </div>
             ${t.description ? `<div class="task-desc">${t.description}</div>` : ''}
-            
-            <div class="badges">
-              <span class="badge">📁 ${catMap[t.category] || t.category}</span>
-              <span class="badge ${priClass[t.priority]}">اولویت: ${t.priority}</span>
+
+            <div class="tags-row">
+              <span class="tag-badge">📁 ${catMap[t.category] || t.category}</span>
+              ${t.is_urgent ? `<span class="tag-badge urgent">🔥 فوری</span>` : ''}
+              ${t.is_important ? `<span class="tag-badge important">⭐ مهم</span>` : ''}
             </div>
-            
+
+            ${subCount > 0 ? `
+              <div class="subtask-mini-progress">
+                <span>☑️ زیرکارها</span>
+                <span><b>${subDone}</b> از ${subCount}</span>
+              </div>
+            ` : ''}
+
             <div class="card-actions">
-              <button class="btn-icon done" onclick="markDone(${t.id})" title="انجام شد"><i class="fas fa-check-circle"></i> انجام شد</button>
-              <button class="btn-icon" onclick="openModal('edit', '${taskJson}')" title="ویرایش"><i class="fas fa-pen"></i></button>
-              <button class="btn-icon del" onclick="deleteTask(${t.id})" title="حذف"><i class="fas fa-trash"></i></button>
+              <button class="action-btn done" onclick="markDone(${t.id})"><i class="fas fa-check"></i> انجام شد</button>
+              <button class="action-btn" onclick="openTaskModal('edit', '${tJson}')"><i class="fas fa-pen"></i></button>
+              <button class="action-btn del" onclick="deleteTask(${t.id})"><i class="fas fa-trash"></i></button>
             </div>
           </div>
         `;
       });
+
       container.innerHTML = html;
     }
 
     async function markDone(id) {
+      tg?.HapticFeedback?.notificationOccurred('success');
+      triggerConfetti();
+
       const el = document.getElementById(`task-${id}`);
-      if (el) el.classList.add('completing');
-      
+      if (el) el.style.opacity = '0.3';
+
       try {
-        const res = await fetch(`${API_BASE}/tasks/${id}/done`, { method: 'POST' });
-        const data = await res.json();
-        
-        if (data.status === 'success') {
-          showXPToast(data.leveled_up ? `🎉 ارتقاء به Level ${data.level}! (+۲۰ XP)` : `+۲۰ امتیاز XP دریافت شد! 🔥`);
-          fetchStats();
-        }
+        await fetch(`${API_BASE}/tasks/${id}/done`, { method: 'POST' });
+        fetchStats();
+        fetchTasks();
       } catch(e) {}
-      
-      setTimeout(fetchTasks, 300);
     }
 
     async function deleteTask(id) {
-      if (!confirm("آیا از حذف این کار مطمئن هستید؟")) return;
+      if (!confirm("آیا از حذف این کار اطمینان دارید؟")) return;
       tg?.HapticFeedback?.impactOccurred('heavy');
       await fetch(`${API_BASE}/tasks/${id}`, { method: 'DELETE' });
       fetchTasks();
     }
 
-    function openModal(mode, taskJsonStr = null) {
+    function openTaskModal(mode, tJson = null) {
       tg?.HapticFeedback?.impactOccurred('light');
-      const modal = document.getElementById('taskModal');
-      
+      document.getElementById('taskModal').style.display = 'flex';
+
       if (mode === 'add') {
         document.getElementById('modalTitle').innerText = '➕ افزودن کار جدید';
-        document.getElementById('taskId').value = '';
-        document.getElementById('tTitle').value = '';
-        document.getElementById('tDesc').value = '';
-      } else if (mode === 'edit') {
-        const t = JSON.parse(decodeURIComponent(taskJsonStr));
+        document.getElementById('mTaskId').value = '';
+        document.getElementById('mTitle').value = '';
+        document.getElementById('mDesc').value = '';
+        document.getElementById('mUrgent').checked = false;
+        document.getElementById('mImportant').checked = true;
+      } else {
+        const t = JSON.parse(decodeURIComponent(tJson));
         document.getElementById('modalTitle').innerText = '✏️ ویرایش کار';
-        document.getElementById('taskId').value = t.id;
-        document.getElementById('tTitle').value = t.title;
-        document.getElementById('tDesc').value = t.description || '';
-        document.getElementById('tCat').value = t.category;
-        document.getElementById('tPri').value = t.priority;
+        document.getElementById('mTaskId').value = t.id;
+        document.getElementById('mTitle').value = t.title;
+        document.getElementById('mDesc').value = t.description || '';
+        document.getElementById('mCat').value = t.category;
+        document.getElementById('mPri').value = t.priority;
+        document.getElementById('mUrgent').checked = t.is_urgent === 1;
+        document.getElementById('mImportant').checked = t.is_important === 1;
       }
-      modal.style.display = 'flex';
     }
 
-    function closeModal() {
+    function closeTaskModal() {
       document.getElementById('taskModal').style.display = 'none';
     }
 
     async function saveTask() {
-      const id = document.getElementById('taskId').value;
+      const id = document.getElementById('mTaskId').value;
       const payload = {
         user_id: userId,
-        title: document.getElementById('tTitle').value,
-        description: document.getElementById('tDesc').value,
-        category: document.getElementById('tCat').value,
-        priority: document.getElementById('tPri').value
+        title: document.getElementById('mTitle').value,
+        description: document.getElementById('mDesc').value,
+        category: document.getElementById('mCat').value,
+        priority: document.getElementById('mPri').value,
+        is_urgent: document.getElementById('mUrgent').checked ? 1 : 0,
+        is_important: document.getElementById('mImportant').checked ? 1 : 0
       };
 
       if (!payload.title) {
@@ -390,8 +604,8 @@
         return;
       }
 
-      closeModal();
-      
+      closeTaskModal();
+
       if (id) {
         await fetch(`${API_BASE}/tasks`, {
           method: 'PUT',
@@ -405,11 +619,41 @@
           body: JSON.stringify(payload)
         });
       }
-      
+
       fetchTasks();
     }
 
-    // Startup
+    // SETTINGS ENGINE
+    function openSettingsModal() { document.getElementById('settingsModal').style.display = 'flex'; }
+    function closeSettingsModal() { document.getElementById('settingsModal').style.display = 'none'; }
+
+    function applyTheme(themeName, el) {
+      document.body.className = '';
+      if (themeName !== 'default') document.body.classList.add(`theme-${themeName}`);
+      localStorage.setItem('pref_theme', themeName);
+      if (el) {
+        document.querySelectorAll('.theme-card').forEach(c => c.classList.remove('active'));
+        el.classList.add('active');
+      }
+    }
+
+    function setLayout(layout) {
+      const c = document.getElementById('tasksContainer');
+      if (layout === 'grid') c.classList.add('grid-view');
+      else c.classList.remove('grid-view');
+      localStorage.setItem('pref_layout', layout);
+    }
+
+    // INITIALIZATION
+    const savedTheme = localStorage.getItem('pref_theme') || 'default';
+    applyTheme(savedTheme, null);
+    const savedLayout = localStorage.getItem('pref_layout') || 'list';
+    setLayout(savedLayout);
+
+    if (tg?.initDataUnsafe?.user?.first_name) {
+      document.getElementById('uName').innerText = `کارهای ${tg.initDataUnsafe.user.first_name}`;
+    }
+
     fetchStats();
     fetchTasks();
   </script>
