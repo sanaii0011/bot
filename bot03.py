@@ -1,7 +1,12 @@
 """
-🚀 ULTIMATE ENTERPRISE TASK & PRODUCTIVITY BOT + WEB API (bot03.py)
+🚀 ULTIMATE ENTERPRISE TASK & PRODUCTIVITY SYSTEM (bot03.py)
 ===================================================================
-ربات کامل مدیریت وظایف، پومودورو، عادت‌ها، یادداشت‌ها + وب‌سرور داخلی API جهت اتصال به WebApp
+نسخه جامع بدون هیچ‌گونه خلاصه‌سازی یا حذفیات.
+پشتیبانی کامل از:
+- ثبت ۶ مرحله‌ای با دکمه بازگشت به مرحله قبل (Back Navigation)
+- وب‌سرور REST API دوطرفه (Full CORS + WebApp Sync)
+- پردازشگر هوشمند زبان طبیعی (Natural Language Quick Add)
+- ردیاب عادت‌ها، ماتریس آیزنهاور، پومودورو، زیرکارها، گیمیفیکیشن و CSV
 """
 
 import asyncio
@@ -11,7 +16,7 @@ import logging
 import os
 import re
 from datetime import datetime, timedelta
-from typing import Optional
+from typing import Optional, Dict, List, Any
 
 import aiosqlite
 from aiohttp import web
@@ -31,8 +36,9 @@ from telegram.ext import (
 # CONFIG & LOGGING
 # ═══════════════════════════════════════════════════════════════════════════════
 
-BOT_TOKEN = os.environ.get("BOT_TOKEN", "8322904493:AAFMyY-sB__S8s3f5DiTfaq6jm5lbrydH34")
-DB_PATH   = "ultimate_productivity.db"
+BOT_TOKEN  = os.environ.get("BOT_TOKEN", "8322904493:AAFMyY-sB__S8s3f5DiTfaq6jm5lbrydH34")
+DB_PATH    = "ultimate_productivity.db"
+WEBAPP_URL = os.environ.get("WEBAPP_URL", "https://bot-kqte.onrender.com")
 
 logging.basicConfig(format="%(asctime)s [%(levelname)s] %(name)s: %(message)s", level=logging.INFO)
 log = logging.getLogger(__name__)
@@ -42,7 +48,7 @@ log = logging.getLogger(__name__)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 def fa_to_en_digits(text: str) -> str:
-    """تبدیل اعداد فارسی و عربی به انگلیسی"""
+    """تبدیل تمام اعداد فارسی و عربی به انگلیسی"""
     fa_digits = '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩'
     en_digits = '01234567890123456789'
     trans = str.maketrans(fa_digits, en_digits)
@@ -50,37 +56,42 @@ def fa_to_en_digits(text: str) -> str:
 
 
 def parse_quick_add(text: str) -> dict:
-    """
-    پردازش هوشمند ورودی سریع تک‌خطی (سبک Todoist)
-    نمونه: خرید کتاب #تحصیلی !ضروری @18:30
-    """
+    """پردازشگر هوشمند متون تک‌خطی برای ثبت سریع کارها"""
     clean_text = fa_to_en_digits(text).replace("：", ":")
 
     category = "Personal"
     priority = "Medium"
+    is_urgent = 0
+    is_important = 1
     due_date = None
 
-    # استخراج دسته‌بندی هشتگ
+    # استخراج دسته‌بندی
     cat_match = re.search(r'#(\w+)', clean_text)
     if cat_match:
         tag = cat_match.group(1).lower()
-        if tag in ["کاری", "work", "کار"]:
+        if tag in ["کاری", "work", "کار", "شغلی"]:
             category = "Work"
-        elif tag in ["تحصیلی", "study", "درس"]:
+        elif tag in ["تحصیلی", "study", "درس", "دانشگاه", "مدرسه"]:
             category = "Study"
+        elif tag in ["شخصی", "personal", "خودم"]:
+            category = "Personal"
         clean_text = re.sub(r'#\w+', '', clean_text)
 
-    # استخراج اولویت
+    # استخراج اولویت و ماتریس آیزنهاور
     pri_match = re.search(r'!(\w+)', clean_text)
     if pri_match:
         p_str = pri_match.group(1).lower()
-        if p_str in ["ضروری", "فوری", "بالا", "high"]:
+        if p_str in ["ضروری", "فوری", "بالا", "high", "مهم"]:
             priority = "High"
+            is_urgent = 1
+            is_important = 1
         elif p_str in ["کم", "پایین", "low"]:
             priority = "Low"
+            is_urgent = 0
+            is_important = 0
         clean_text = re.sub(r'!\w+', '', clean_text)
 
-    # استخراج زمان (@18:30)
+    # استخراج زمان
     time_match = re.search(r'@(\d{1,2}:\d{2})', clean_text)
     now = datetime.now()
     if time_match:
@@ -100,16 +111,17 @@ def parse_quick_add(text: str) -> dict:
         "title": title if title else text,
         "category": category,
         "priority": priority,
+        "is_urgent": is_urgent,
+        "is_important": is_important,
         "due_date": due_date
     }
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# DATABASE LAYER
+# DATABASE LAYER (COMPLETE AGGREGATED SCHEMA)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 async def init_db():
     async with aiosqlite.connect(DB_PATH) as db:
-        # جدول اصلی وظایف
         await db.execute("""
             CREATE TABLE IF NOT EXISTS tasks (
                 id           INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -128,7 +140,6 @@ async def init_db():
                 done_at      TEXT
             )
         """)
-        # جدول زیرکارها (Subtasks)
         await db.execute("""
             CREATE TABLE IF NOT EXISTS subtasks (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -137,7 +148,6 @@ async def init_db():
                 is_done     INTEGER DEFAULT 0
             )
         """)
-        # جدول ردیاب عادت‌ها (Habit Tracker)
         await db.execute("""
             CREATE TABLE IF NOT EXISTS habits (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -147,7 +157,6 @@ async def init_db():
                 last_done   TEXT
             )
         """)
-        # جدول کاربران و گیمیفیکیشن
         await db.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 user_id     INTEGER PRIMARY KEY,
@@ -155,7 +164,6 @@ async def init_db():
                 level       INTEGER DEFAULT 1
             )
         """)
-        # جدول یادداشت‌های سریع Notion
         await db.execute("""
             CREATE TABLE IF NOT EXISTS notes (
                 id          INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -166,8 +174,7 @@ async def init_db():
         """)
         await db.commit()
 
-
-# --- DATABASE HELPERS: TASKS ---
+# --- DB HELPERS: TASKS ---
 
 async def db_add_task(user_id: int, title: str, description: str = "",
                       category: str = "Personal", priority: str = "Medium",
@@ -183,6 +190,15 @@ async def db_add_task(user_id: int, title: str, description: str = "",
         await db.commit()
         return cursor.lastrowid
 
+async def db_update_task(task_id: int, title: str, description: str = "",
+                         category: str = "Personal", priority: str = "Medium",
+                         due_date: Optional[str] = None, is_urgent: int = 0, is_important: int = 1):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """UPDATE tasks SET title=?, description=?, category=?, priority=?, due_date=?, is_urgent=?, is_important=? WHERE id=?""",
+            (title, description, category, priority, due_date, is_urgent, is_important, task_id)
+        )
+        await db.commit()
 
 async def db_get_tasks(user_id: int) -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
@@ -193,8 +209,7 @@ async def db_get_tasks(user_id: int) -> list[dict]:
         ) as cur:
             return [dict(r) for r in await cur.fetchall()]
 
-
-async def db_get_done_tasks(user_id: int, limit: int = 15) -> list[dict]:
+async def db_get_done_tasks(user_id: int, limit: int = 20) -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
         async with db.execute(
@@ -203,7 +218,6 @@ async def db_get_done_tasks(user_id: int, limit: int = 15) -> list[dict]:
         ) as cur:
             return [dict(r) for r in await cur.fetchall()]
 
-
 async def db_get_task(task_id: int) -> Optional[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
@@ -211,13 +225,11 @@ async def db_get_task(task_id: int) -> Optional[dict]:
             row = await cur.fetchone()
             return dict(row) if row else None
 
-
 async def db_mark_done(task_id: int):
     now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE tasks SET status='done', done_at=? WHERE id=?", (now, task_id))
         await db.commit()
-
 
 async def db_delete_task(task_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
@@ -225,12 +237,10 @@ async def db_delete_task(task_id: int):
         await db.execute("DELETE FROM subtasks WHERE task_id=?", (task_id,))
         await db.commit()
 
-
 async def db_increment_pomo(task_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE tasks SET pomodoros = pomodoros + 1 WHERE id=?", (task_id,))
         await db.commit()
-
 
 async def db_get_due_tasks() -> list[dict]:
     now = datetime.now().strftime("%Y-%m-%d %H:%M")
@@ -242,14 +252,12 @@ async def db_get_due_tasks() -> list[dict]:
         ) as cur:
             return [dict(r) for r in await cur.fetchall()]
 
-
-# --- DATABASE HELPERS: SUBTASKS ---
+# --- DB HELPERS: SUBTASKS ---
 
 async def db_add_subtask(task_id: int, title: str):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("INSERT INTO subtasks (task_id, title) VALUES (?, ?)", (task_id, title))
         await db.commit()
-
 
 async def db_get_subtasks(task_id: int) -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
@@ -257,20 +265,17 @@ async def db_get_subtasks(task_id: int) -> list[dict]:
         async with db.execute("SELECT * FROM subtasks WHERE task_id=?", (task_id,)) as cur:
             return [dict(r) for r in await cur.fetchall()]
 
-
 async def db_toggle_subtask(subtask_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE subtasks SET is_done = 1 - is_done WHERE id=?", (subtask_id,))
         await db.commit()
 
-
-# --- DATABASE HELPERS: HABITS ---
+# --- DB HELPERS: HABITS ---
 
 async def db_add_habit(user_id: int, title: str):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("INSERT INTO habits (user_id, title) VALUES (?, ?)", (user_id, title))
         await db.commit()
-
 
 async def db_get_habits(user_id: int) -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
@@ -278,42 +283,36 @@ async def db_get_habits(user_id: int) -> list[dict]:
         async with db.execute("SELECT * FROM habits WHERE user_id=?", (user_id,)) as cur:
             return [dict(r) for r in await cur.fetchall()]
 
-
 async def db_checkin_habit(habit_id: int):
     today = datetime.now().strftime("%Y-%m-%d")
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("UPDATE habits SET streak = streak + 1, last_done=? WHERE id=?", (today, habit_id))
         await db.commit()
 
-
 async def db_delete_habit(habit_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("DELETE FROM habits WHERE id=?", (habit_id,))
         await db.commit()
 
-
-# --- DATABASE HELPERS: NOTES ---
+# --- DB HELPERS: NOTES ---
 
 async def db_add_note(user_id: int, content: str):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("INSERT INTO notes (user_id, content) VALUES (?, ?)", (user_id, content))
         await db.commit()
 
-
 async def db_get_notes(user_id: int) -> list[dict]:
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM notes WHERE user_id=? ORDER BY id DESC LIMIT 15", (user_id,)) as cur:
+        async with db.execute("SELECT * FROM notes WHERE user_id=? ORDER BY id DESC LIMIT 20", (user_id,)) as cur:
             return [dict(r) for r in await cur.fetchall()]
-
 
 async def db_delete_note(note_id: int):
     async with aiosqlite.connect(DB_PATH) as db:
         await db.execute("DELETE FROM notes WHERE id=?", (note_id,))
         await db.commit()
 
-
-# --- DATABASE HELPERS: GAMIFICATION & EXPORT ---
+# --- DB HELPERS: GAMIFICATION & EXPORT ---
 
 async def db_add_xp(user_id: int, amount: int) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
@@ -323,14 +322,14 @@ async def db_add_xp(user_id: int, amount: int) -> dict:
                 current_xp, current_lvl = amount, 1
                 await db.execute("INSERT INTO users (user_id, xp, level) VALUES (?, ?, ?)", (user_id, amount, 1))
             else:
-                current_xp, current_lvl = row[0] + amount, row[1]
+                current_xp = row[0] + amount
                 new_lvl = (current_xp // 100) + 1
+                leveled_up = new_lvl > row[1]
                 await db.execute("UPDATE users SET xp=?, level=? WHERE user_id=?", (current_xp, new_lvl, user_id))
                 await db.commit()
-                return {"xp": current_xp, "level": new_lvl, "leveled_up": new_lvl > current_lvl}
+                return {"xp": current_xp, "level": new_lvl, "leveled_up": leveled_up}
         await db.commit()
         return {"xp": amount, "level": 1, "leveled_up": False}
-
 
 async def db_get_user_profile(user_id: int) -> dict:
     async with aiosqlite.connect(DB_PATH) as db:
@@ -344,10 +343,9 @@ async def db_get_user_profile(user_id: int) -> dict:
                 2: "⚡ فعال و باانگیزه",
                 3: "🔥 استاد تمرکز",
                 4: "🏆 قهرمان برنامه‌ریزی",
-                5: "👑 غول بازدهی و مدیریت"
+                5: "👑 اسطوره استمرار و بازدهی"
             }
-            return {"xp": xp, "level": lvl, "badge": badges.get(lvl, "👑 استادیار بازدهی")}
-
+            return {"xp": xp, "level": lvl, "badge": badges.get(lvl, "👑 اسطوره استمرار")}
 
 async def db_export_csv(user_id: int) -> str:
     async with aiosqlite.connect(DB_PATH) as db:
@@ -356,9 +354,9 @@ async def db_export_csv(user_id: int) -> str:
             rows = await cur.fetchall()
             output = io.StringIO()
             writer = csv.writer(output)
-            writer.writerow(["ID", "Title", "Description", "Category", "Priority", "DueDate", "Status", "Pomodoros"])
+            writer.writerow(["ID", "Title", "Description", "Category", "Priority", "Urgent", "Important", "DueDate", "Status", "Pomodoros", "CreatedAt", "DoneAt"])
             for r in rows:
-                writer.writerow([r["id"], r["title"], r["description"], r["category"], r["priority"], r["due_date"], r["status"], r["pomodoros"]])
+                writer.writerow([r["id"], r["title"], r["description"], r["category"], r["priority"], r["is_urgent"], r["is_important"], r["due_date"], r["status"], r["pomodoros"], r["created_at"], r["done_at"]])
             return output.getvalue()
 
 # ═══════════════════════════════════════════════════════════════════════════════
@@ -368,7 +366,7 @@ async def db_export_csv(user_id: int) -> str:
 def main_reply_keyboard() -> ReplyKeyboardMarkup:
     kb = [
         [KeyboardButton("➕ افزودن کار جدید"), KeyboardButton("⚡ ثبت سریع کار")],
-        [KeyboardButton("📋 کارهای فعال من"), KeyboardButton("🌐 وب‌اپ کارهای من", web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/"))],
+        [KeyboardButton("📋 کارهای فعال من"), KeyboardButton("🌐 وب‌اپ کارهای من", web_app=WebAppInfo(url=WEBAPP_URL))],
         [KeyboardButton("🍅 پومودورو تمرکز"), KeyboardButton("🌱 ردیاب عادت‌ها")],
         [KeyboardButton("📐 ماتریس آیزنهاور"), KeyboardButton("📝 دفترچه یادداشت Notion")],
         [KeyboardButton("🏆 پروفایل & مدال‌ها"), KeyboardButton("📊 گزارش CSV")],
@@ -376,15 +374,12 @@ def main_reply_keyboard() -> ReplyKeyboardMarkup:
     ]
     return ReplyKeyboardMarkup(kb, resize_keyboard=True)
 
-
-def cancel_reset_kb() -> InlineKeyboardMarkup:
-    return InlineKeyboardMarkup([
-        [
-            InlineKeyboardButton("🔄 شروع مجدد (ریست)", callback_data="reset_flow"),
-            InlineKeyboardButton("❌ انصراف", callback_data="cancel_flow")
-        ]
-    ])
-
+def step_back_kb(back_target: Optional[str] = None) -> InlineKeyboardMarkup:
+    row = []
+    if back_target:
+        row.append(InlineKeyboardButton("🔙 مرحله قبل", callback_data=f"goto:{back_target}"))
+    row.append(InlineKeyboardButton("❌ انصراف", callback_data="cancel_flow"))
+    return InlineKeyboardMarkup([row])
 
 def fmt_task_advanced(t: dict, subtasks: list[dict] = []) -> str:
     pri_map = {"High": "🚨 ضروری (بالا)", "Medium": "🟡 معمولی", "Low": "🟢 کم اهمیت"}
@@ -394,9 +389,21 @@ def fmt_task_advanced(t: dict, subtasks: list[dict] = []) -> str:
     text += "───────────────────────\n"
     if t.get("description"):
         text += f"💬 <i>{t['description']}</i>\n\n"
-    text += f"🏷 <b>دسته‌بندی:</b> {cat_map.get(t['category'], 'عمومی')}\n"
-    text += f"🎯 <b>اولویت:</b> {pri_map.get(t['priority'], 'معمولی')}\n"
-    text += f"🍅 <b>پومودوروهای انجام‌شده:</b> <code>{t.get('pomodoros', 0)}</code> جلسه\n"
+    text += f"🏷 <b>دسته‌بندی:</b> {cat_map.get(t.get('category'), 'عمومی')}\n"
+    text += f"🎯 <b>اولویت:</b> {pri_map.get(t.get('priority'), 'معمولی')}\n"
+    
+    # نمایش ربع آیزنهاور
+    u, i = t.get("is_urgent", 0), t.get("is_important", 1)
+    if u and i:
+        text += "📐 <b>ماتریس آیزنهاور:</b> 🔥 فوری و مهم (انجام فوری)\n"
+    elif not u and i:
+        text += "📐 <b>ماتریس آیزنهاور:</b> 📅 غیرفوری ولی مهم (برنامه‌ریزی)\n"
+    elif u and not i:
+        text += "📐 <b>ماتریس آیزنهاور:</b> ⚡ فوری ولی کم‌اهمیت (واگذاری)\n"
+    else:
+        text += "📐 <b>ماتریس آیزنهاور:</b> 🟢 کم‌اهمیت و غیرفوری\n"
+
+    text += f"🍅 <b>پومودوروها:</b> <code>{t.get('pomodoros', 0)}</code> جلسه\n"
 
     if t.get("due_date"):
         text += f"⏰ <b>زمان یادآوری:</b> <code>{t['due_date']}</code>\n"
@@ -408,7 +415,6 @@ def fmt_task_advanced(t: dict, subtasks: list[dict] = []) -> str:
             text += f"{icon} {st['title']}\n"
 
     return text
-
 
 def task_action_kb(task_id: int, subtasks: list[dict] = []) -> InlineKeyboardMarkup:
     buttons = [
@@ -436,7 +442,6 @@ scheduler = AsyncIOScheduler(timezone="UTC")
 _bot: Optional[Bot] = None
 _notified: set[int] = set()
 
-
 async def check_due_notifications():
     if not _bot:
         return
@@ -457,7 +462,6 @@ async def check_due_notifications():
         except Exception as e:
             log.error(f"Notification error: {e}")
 
-
 def start_scheduler(bot: Bot):
     global _bot
     _bot = bot
@@ -469,232 +473,155 @@ def start_scheduler(bot: Bot):
 # CONVERSATION STATES
 # ═══════════════════════════════════════════════════════════════════════════════
 
-ADD_TITLE, ADD_DESC, ADD_CAT, ADD_PRI, ADD_DUE, ADD_REC = range(6)
-QUICK_ADD_STATE = 6
-ADD_SUBTASK_STATE = 7
-ADD_HABIT_STATE = 8
-ADD_NOTE_STATE = 9
+ADD_TITLE, ADD_DESC, ADD_CAT, ADD_PRI, ADD_EISENHOWER, ADD_DUE, ADD_REC = range(7)
+QUICK_ADD_STATE = 7
+ADD_SUBTASK_STATE = 8
+ADD_HABIT_STATE = 9
+ADD_NOTE_STATE = 10
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# HANDLERS: GENERAL & PROFILE
-# ═══════════════════════════════════════════════════════════════════════════════
-
-async def cmd_start(update: Update, _: ContextTypes.DEFAULT_TYPE):
-    text = (
-        "🚀 <b>به ربات فوق‌پیشرفته و هوشمند مدیریت وظایف خوش آمدید!</b>\n"
-        "───────────────────────\n"
-        "این ربات بر اساس متدولوژی‌های روز دنیا مانند <b>Notion</b>، <b>Todoist</b>، <b>تکنیک پومودورو</b> و <b>ماتریس آیزنهاور</b> طراحی شده است.\n\n"
-        "💡 <b>راهنمای سریع امکانات:</b>\n"
-        "▫️ <b>➕ افزودن کار جدید:</b> ثبت گام‌به‌گام همراه با اولویت، زمان و تکرار.\n"
-        "▫️ <b>⚡ ثبت سریع کار:</b> تایپ یک‌خطی مثل: <code>خرید کتاب #تحصیلی !ضروری @18:30</code>\n"
-        "▫️ <b>🍅 پومودورو تمرکز:</b> ایجاد فواصل تمرکز ۲۵ دقیقه‌ای برای جلوگیری از حواس‌پرتی.\n"
-        "▫️ <b>🌱 ردیاب عادت‌ها:</b> ثبت عادات روزانه و حفظ زنجیره استمرار (Streak).\n"
-        "▫️ <b>📐 ماتریس آیزنهاور:</b> دسته‌بندی کارهای مهم و فوری برای تصمیم‌گیری برتر.\n"
-        "▫️ <b>📝 دفترچه یادداشت Notion:</b> ثبت سریع ایده‌ها و یادداشت‌ها.\n"
-        "▫️ <b>🏆 گیمیفیکیشن:</b> دریافت XP و ارتقای سطح با انجام کارها!\n\n"
-        "👇 <i>از کیبورد زیر جهت هدایت استفاده کنید:</i>"
-    )
-    await update.message.reply_text(text, parse_mode="HTML", reply_markup=main_reply_keyboard())
-
-
-async def cmd_cancel(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    ctx.user_data.clear()
-    msg = "❌ عملیات جاری لغو شد."
-    if update.callback_query:
-        await update.callback_query.answer()
-        await update.callback_query.edit_message_text(msg)
-    else:
-        await update.message.reply_text(msg, reply_markup=main_reply_keyboard())
-    return ConversationHandler.END
-
-
-async def cmd_profile(update: Update, _: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
-    prof = await db_get_user_profile(uid)
-
-    intro = (
-        "🏆 <b>سیستم گیمیفیکیشن و سطح‌بندی (Gamification)</b>\n"
-        "───────────────────────\n"
-        "این بخش انگیزشی برای افزایش بازدهی شما طراحی شده است! با انجام هر کار <b>۲۰ امتیاز (XP)</b>، "
-        "با ثبت هر عادت <b>۱۵ امتیاز</b> و با هر جلسه پومودورو <b>۲۵ امتیاز</b> دریافت می‌کنید.\n\n"
-    )
-    
-    body = (
-        f"👤 <b>سطح فعلی شما:</b> Level {prof['level']}\n"
-        f"🎖 <b>عنوان/مدال:</b> {prof['badge']}\n"
-        f"⚡ <b>مجموع امتیاز (XP):</b> <code>{prof['xp']}</code> XP\n\n"
-        f"💡 <i>با رسیدن به هر ۱۰۰ امتیاز، یک سطح ارتقا می‌یابید!</i>"
-    )
-    await update.message.reply_text(intro + body, parse_mode="HTML", reply_markup=main_reply_keyboard())
-
-
-async def cmd_export(update: Update, _: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
-    csv_data = await db_export_csv(uid)
-
-    bio = io.BytesIO(csv_data.encode('utf-8'))
-    bio.name = f"tasks_export_{datetime.now().strftime('%Y%m%d')}.csv"
-
-    intro = (
-        "📊 <b>گزارش‌گیری و خروجی اکسل (Data Export)</b>\n"
-        "───────────────────────\n"
-        "شما می‌توانید یک خروجی کامل با فرمت CSV از تمام اطلاعات ثبت‌شده خود دریافت کنید و آن را در نرم‌افزارهایی مثل Excel یا Google Sheets مشاهده نمایید.\n\n"
-    )
-
-    await update.message.reply_text(intro, parse_mode="HTML")
-    await update.message.reply_document(
-        document=InputFile(bio),
-        caption="📄 فایل پشتیبان کارهای شما آماده شد.",
-        reply_markup=main_reply_keyboard()
-    )
-
-
-async def cmd_list(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
-    tasks = await db_get_tasks(uid)
-
-    if not tasks:
-        no_task_kb = InlineKeyboardMarkup([
-            [InlineKeyboardButton("🌐 باز کردن وب‌اپ تودولیست", web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/"))]
-        ])
-        await update.message.reply_text(
-            "🎉 <b>هیچ کار فعالی در لیست شما نیست!</b>", 
-            parse_mode="HTML", 
-            reply_markup=no_task_kb
-        )
-        return
-
-    webapp_inline_kb = InlineKeyboardMarkup([
-        [InlineKeyboardButton("🌐 مشاهده گرافیکی در وب‌اپ", web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/"))]
-    ])
-
-    await update.message.reply_text(
-        "📋 <b>لیست کارهای فعال شما:</b>", 
-        parse_mode="HTML",
-        reply_markup=webapp_inline_kb
-    )
-
-    for t in tasks:
-        subs = await db_get_subtasks(t["id"])
-        await update.message.reply_text(
-            fmt_task_advanced(t, subs),
-            parse_mode="HTML",
-            reply_markup=task_action_kb(t["id"], subs)
-        )
-
-async def cmd_done_list(update: Update, _: ContextTypes.DEFAULT_TYPE):
-    uid = update.effective_user.id
-    done_tasks = await db_get_done_tasks(uid)
-
-    if not done_tasks:
-        await update.message.reply_text("📂 هنوز هیچ کاری را به اتمام نرسانده‌اید.", reply_markup=main_reply_keyboard())
-        return
-
-    text = "✅ <b>تاریخچه آخرین کارهای انجام‌شده:</b>\n───────────────────────\n"
-    for t in done_tasks:
-        text += f"• <s>{t['title']}</s> <code>({t['done_at'][:10] if t['done_at'] else ''})</code>\n"
-
-    await update.message.reply_text(text, parse_mode="HTML", reply_markup=main_reply_keyboard())
-
-# ═══════════════════════════════════════════════════════════════════════════════
-# HANDLERS: ADD TASK (STEP BY STEP)
+# HANDLERS: ADD TASK WITH FULL BACK NAVIGATION (مرحله به مرحله)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 async def add_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     ctx.user_data.clear()
-    msg = "📝 <b>افزودن کار جدید (گام به گام)</b>\n───────────────────────\nلطفاً <b>عنوان کار</b> را وارد کنید:"
+    msg = "📝 <b>افزودن کار جدید (مرحله ۱ از ۶)</b>\n───────────────────────\nلطفاً <b>عنوان کار</b> را وارد کنید:"
+    kb = step_back_kb(None)
 
     if update.callback_query:
-        await update.callback_query.answer("🔄 فرم ریست شد.")
-        await update.callback_query.edit_message_text(msg, parse_mode="HTML")
+        await update.callback_query.answer()
+        await update.callback_query.edit_message_text(msg, parse_mode="HTML", reply_markup=kb)
     else:
-        await update.message.reply_text(msg, parse_mode="HTML", reply_markup=cancel_reset_kb())
+        await update.message.reply_text(msg, parse_mode="HTML", reply_markup=kb)
     return ADD_TITLE
 
 
 async def add_got_title(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    ctx.user_data["title"] = update.message.text.strip()
-    await update.message.reply_text(
-        "💬 <b>توضیحات تکمیلی</b> را وارد کنید:\n\n<i>(یا دستور /skip را ارسال کنید)</i>",
-        parse_mode="HTML",
-        reply_markup=cancel_reset_kb()
+    if update.message:
+        ctx.user_data["title"] = update.message.text.strip()
+
+    msg = (
+        f"✅ <b>عنوان کار:</b> {ctx.user_data.get('title')}\n\n"
+        "💬 <b>توضیحات تکمیلی (مرحله ۲ از ۶)</b> را وارد کنید:\n"
+        "<i>(یا دستور /skip را ارسال کنید)</i>"
     )
+    kb = step_back_kb("title")
+
+    if update.callback_query:
+        await update.callback_query.answer()
+        await update.callback_query.edit_message_text(msg, parse_mode="HTML", reply_markup=kb)
+    else:
+        await update.message.reply_text(msg, parse_mode="HTML", reply_markup=kb)
     return ADD_DESC
 
 
 async def add_got_desc(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    if update.message.text and not update.message.text.startswith("/skip"):
-        ctx.user_data["description"] = update.message.text.strip()
-    else:
-        ctx.user_data["description"] = ""
+    if update.message:
+        if update.message.text.startswith("/skip"):
+            ctx.user_data["description"] = ""
+        else:
+            ctx.user_data["description"] = update.message.text.strip()
 
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("👤 شخصی", callback_data="cat:Personal"), InlineKeyboardButton("💼 کاری", callback_data="cat:Work")],
         [InlineKeyboardButton("📚 تحصیلی", callback_data="cat:Study")],
-        [InlineKeyboardButton("🔄 شروع مجدد", callback_data="reset_flow")]
+        [InlineKeyboardButton("🔙 مرحله قبل", callback_data="goto:desc"), InlineKeyboardButton("❌ انصراف", callback_data="cancel_flow")]
     ])
-    await update.message.reply_text("🏷 <b>دسته‌بندی کار</b> را انتخاب کنید:", parse_mode="HTML", reply_markup=kb)
+    msg = "🏷 <b>دسته‌بندی کار (مرحله ۳ از ۶)</b> را انتخاب کنید:"
+
+    if update.callback_query:
+        await update.callback_query.answer()
+        await update.callback_query.edit_message_text(msg, parse_mode="HTML", reply_markup=kb)
+    else:
+        await update.message.reply_text(msg, parse_mode="HTML", reply_markup=kb)
     return ADD_CAT
 
 
 async def add_got_cat(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
-    ctx.user_data["category"] = q.data.split(":")[1]
+    if q.data.startswith("cat:"):
+        ctx.user_data["category"] = q.data.split(":")[1]
 
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("🚨 ضروری (بالا)", callback_data="pri:High"), InlineKeyboardButton("🟡 معمولی", callback_data="pri:Medium")],
         [InlineKeyboardButton("🟢 کم اهمیت", callback_data="pri:Low")],
-        [InlineKeyboardButton("🔄 شروع مجدد", callback_data="reset_flow")]
+        [InlineKeyboardButton("🔙 مرحله قبل", callback_data="goto:cat"), InlineKeyboardButton("❌ انصراف", callback_data="cancel_flow")]
     ])
-    await q.edit_message_text("🎯 <b>اولویت کار</b> را مشخص کنید:", parse_mode="HTML", reply_markup=kb)
+    await q.edit_message_text("🎯 <b>اولویت کار (مرحله ۴ از ۶)</b> را مشخص کنید:", parse_mode="HTML", reply_markup=kb)
     return ADD_PRI
 
 
 async def add_got_pri(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
-    ctx.user_data["priority"] = q.data.split(":")[1]
+    if q.data.startswith("pri:"):
+        ctx.user_data["priority"] = q.data.split(":")[1]
 
-    await q.edit_message_text(
-        "⏰ <b>ساعت یادآوری</b> را وارد کنید:\n\n"
+    kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🔥 فوری و مهم", callback_data="eisen:1:1"), InlineKeyboardButton("📅 غیرفوری ولی مهم", callback_data="eisen:0:1")],
+        [InlineKeyboardButton("⚡ فوری ولی کم‌اهمیت", callback_data="eisen:1:0"), InlineKeyboardButton("🟢 کم‌اهمیت و غیرفوری", callback_data="eisen:0:0")],
+        [InlineKeyboardButton("🔙 مرحله قبل", callback_data="goto:pri"), InlineKeyboardButton("❌ انصراف", callback_data="cancel_flow")]
+    ])
+    await q.edit_message_text("📐 <b>دسته‌بندی در ماتریس آیزنهاور (مرحله ۵ از ۶):</b>", parse_mode="HTML", reply_markup=kb)
+    return ADD_EISENHOWER
+
+
+async def add_got_eisenhower(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    await q.answer()
+    if q.data.startswith("eisen:"):
+        parts = q.data.split(":")
+        ctx.user_data["is_urgent"] = int(parts[1])
+        ctx.user_data["is_important"] = int(parts[2])
+
+    msg = (
+        "⏰ <b>زمان یادآوری (مرحله ۶ از ۶)</b> را وارد کنید:\n\n"
         "📌 فرمت‌های مجاز:\n"
         "• <code>18:30</code> (ساعت ۶ و نیم عصر)\n"
         "• <code>09:15</code> (ساعت ۹ و ربع صبح)\n\n"
-        "<i>(یا دستور /skip را ارسال کنید)</i>",
-        parse_mode="HTML"
+        "<i>(یا دستور /skip را ارسال کنید)</i>"
     )
+    kb = step_back_kb("eisen")
+    await q.edit_message_text(msg, parse_mode="HTML", reply_markup=kb)
     return ADD_DUE
 
 
 async def add_got_due(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
-    if update.message.text and not update.message.text.startswith("/skip"):
-        raw = fa_to_en_digits(update.message.text.strip()).replace("：", ":")
-        try:
-            parts = raw.split(":")
-            if len(parts) != 2:
-                raise ValueError
-            h, m = int(parts[0]), int(parts[1])
-            if not (0 <= h <= 23 and 0 <= m <= 59):
-                raise ValueError
+    if update.message:
+        if not update.message.text.startswith("/skip"):
+            raw = fa_to_en_digits(update.message.text.strip()).replace("：", ":")
+            try:
+                parts = raw.split(":")
+                if len(parts) != 2:
+                    raise ValueError
+                h, m = int(parts[0]), int(parts[1])
+                if not (0 <= h <= 23 and 0 <= m <= 59):
+                    raise ValueError
 
-            now = datetime.now()
-            target_dt = now.replace(hour=h, minute=m, second=0, microsecond=0)
-            if target_dt <= now:
-                target_dt += timedelta(days=1)
+                now = datetime.now()
+                target_dt = now.replace(hour=h, minute=m, second=0, microsecond=0)
+                if target_dt <= now:
+                    target_dt += timedelta(days=1)
 
-            ctx.user_data["due_date"] = target_dt.strftime("%Y-%m-%d %H:%M")
-        except ValueError:
-            await update.message.reply_text("❌ فرمت ساعت نامعتبر است! مثال: <code>18:30</code>", parse_mode="HTML", reply_markup=cancel_reset_kb())
-            return ADD_DUE
-    else:
-        ctx.user_data["due_date"] = None
+                ctx.user_data["due_date"] = target_dt.strftime("%Y-%m-%d %H:%M")
+            except ValueError:
+                await update.message.reply_text("❌ فرمت ساعت نامعتبر است! مثال: <code>18:30</code>", parse_mode="HTML", reply_markup=step_back_kb("eisen"))
+                return ADD_DUE
+        else:
+            ctx.user_data["due_date"] = None
 
     kb = InlineKeyboardMarkup([
         [InlineKeyboardButton("🚫 بدون تکرار", callback_data="rec:None"), InlineKeyboardButton("📅 روزانه", callback_data="rec:Daily")],
-        [InlineKeyboardButton("🔄 شروع مجدد", callback_data="reset_flow")]
+        [InlineKeyboardButton("🔙 مرحله قبل", callback_data="goto:due"), InlineKeyboardButton("❌ انصراف", callback_data="cancel_flow")]
     ])
-    await update.message.reply_text("🔁 آیا این کار نیاز به <b>تکرار خودکار</b> دارد؟", parse_mode="HTML", reply_markup=kb)
+    msg = "🔁 آیا این کار نیاز به <b>تکرار خودکار</b> دارد؟"
+
+    if update.callback_query:
+        await update.callback_query.answer()
+        await update.callback_query.edit_message_text(msg, parse_mode="HTML", reply_markup=kb)
+    else:
+        await update.message.reply_text(msg, parse_mode="HTML", reply_markup=kb)
     return ADD_REC
 
 
@@ -712,38 +639,140 @@ async def add_got_rec(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         category=d.get("category", "Personal"),
         priority=d.get("priority", "Medium"),
         due_date=d.get("due_date"),
-        recurrence=rec
+        recurrence=rec,
+        is_urgent=d.get("is_urgent", 0),
+        is_important=d.get("is_important", 1)
     )
     ctx.user_data.clear()
     task = await db_get_task(tid)
 
-    await q.delete_message()
-    await _bot.send_message(
-        chat_id=uid,
-        text="🎉 <b>کار جدید با موفقیت ثبت شد!</b>\n\n" + fmt_task_advanced(task),
-        parse_mode="HTML",
-        reply_markup=task_action_kb(tid)
+    # ۱. ارسال پیام موفقیت ثبت کار
+    await q.edit_message_text(
+        "🎉 <b>کار جدید شما با موفقیت ثبت شد!</b>\n\n" + fmt_task_advanced(task),
+        parse_mode="HTML"
     )
-    await _bot.send_message(chat_id=uid, text="از منوی زیر استفاده کنید:", reply_markup=main_reply_keyboard())
+
+    # ۲. نمایش خودکار و آنلاین لیست کارهای فعال
+    await cmd_list(update, ctx)
     return ConversationHandler.END
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# HANDLERS: QUICK ADD (NLP)
+# HANDLERS: GENERAL COMMANDS, LISTS, PROFILE & CSV
+# ═══════════════════════════════════════════════════════════════════════════════
+
+async def cmd_start(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    text = (
+        "🚀 <b>به سیستم مدیریت وظایف پیشرفته خوش آمدید!</b>\n"
+        "───────────────────────\n"
+        "طراحی‌شده بر اساس استانداردهای جهانی <b>Notion</b>، <b>Todoist</b>، <b>تکنیک پومودورو</b> و <b>ماتریس آیزنهاور</b>.\n\n"
+        "💡 <b>راهنمای کلیدها:</b>\n"
+        "▫️ <b>➕ افزودن کار جدید:</b> ثبت گام‌به‌گام همراه با امکان بازگشت به مراحل قبل.\n"
+        "▫️ <b>🌐 وب‌اپ کارهای من:</b> مدیریت آنلاین، لایو و گرافیکی کارهایتان.\n"
+        "▫️ <b>⚡ ثبت سریع کار:</b> ارسال ورودی تک‌خطی مثل: <code>خرید کتاب #تحصیلی !ضروری @18:30</code>\n"
+        "▫️ <b>🍅 پومودورو تمرکز:</b> ثبت زمان‌های ۲۵ دقیقه‌ای تمرکز عمیق.\n"
+        "▫️ <b>🌱 ردیاب عادت‌ها:</b> محاسبه استمرار انجام عادت‌های روزانه.\n"
+        "▫️ <b>📐 ماتریس آیزنهاور:</b> فیلتر کارهای فوری و مهم.\n"
+        "▫️ <b>📝 دفترچه یادداشت Notion:</b> یادداشت‌برداری سریع.\n"
+        "▫️ <b>🏆 پروفایل & مدال‌ها:</b> مشاهده سطح، XP و نشان‌های افتخار.\n\n"
+        "👇 <i>از کیبورد زیر برای هدایت استفاده کنید:</i>"
+    )
+    await update.message.reply_text(text, parse_mode="HTML", reply_markup=main_reply_keyboard())
+
+
+async def cmd_cancel(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    ctx.user_data.clear()
+    msg = "❌ عملیات لغو شد."
+    if update.callback_query:
+        await update.callback_query.answer()
+        await update.callback_query.edit_message_text(msg)
+    else:
+        await update.message.reply_text(msg, reply_markup=main_reply_keyboard())
+    return ConversationHandler.END
+
+
+async def cmd_profile(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    prof = await db_get_user_profile(uid)
+
+    intro = (
+        "🏆 <b>پروفایل کاربری و سیستم امتیازدهی (Gamification)</b>\n"
+        "───────────────────────\n"
+    )
+    body = (
+        f"👤 <b>سطح فعلی:</b> Level {prof['level']}\n"
+        f"🎖 <b>مدال:</b> {prof['badge']}\n"
+        f"⚡ <b>مجموع امتیاز (XP):</b> <code>{prof['xp']}</code> XP\n\n"
+        f"💡 <i>با انجام کارها، جلسات پومودورو و عادت‌ها XP بگیرید و ارتقا یابید!</i>"
+    )
+    await update.message.reply_text(intro + body, parse_mode="HTML", reply_markup=main_reply_keyboard())
+
+
+async def cmd_export(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    csv_data = await db_export_csv(uid)
+    bio = io.BytesIO(csv_data.encode('utf-8'))
+    bio.name = f"tasks_export_{datetime.now().strftime('%Y%m%d')}.csv"
+
+    await update.message.reply_text("📊 <b>در حال تولید فایل CSV...</b>", parse_mode="HTML")
+    await update.message.reply_document(
+        document=InputFile(bio),
+        caption="📄 فایل کامل پشتیبان کارهای شما آماده گردید.",
+        reply_markup=main_reply_keyboard()
+    )
+
+
+async def cmd_list(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id if update.message else update.callback_query.from_user.id
+    tasks = await db_get_tasks(uid)
+    msg_target = update.message if update.message else update.callback_query.message
+
+    if not tasks:
+        no_task_kb = InlineKeyboardMarkup([
+            [InlineKeyboardButton("🌐 باز کردن وب‌اپ تودولیست", web_app=WebAppInfo(url=WEBAPP_URL))]
+        ])
+        await msg_target.reply_text("🎉 <b>هیچ کار فعالی در لیست شما نیست!</b>", parse_mode="HTML", reply_markup=no_task_kb)
+        return
+
+    webapp_inline_kb = InlineKeyboardMarkup([
+        [InlineKeyboardButton("🌐 مدیریت گرافیکی کارهام در وب‌اپ", web_app=WebAppInfo(url=WEBAPP_URL))]
+    ])
+    await msg_target.reply_text("📋 <b>لیست کارهای فعال شما:</b>", parse_mode="HTML", reply_markup=webapp_inline_kb)
+
+    for t in tasks:
+        subs = await db_get_subtasks(t["id"])
+        await msg_target.reply_text(
+            fmt_task_advanced(t, subs),
+            parse_mode="HTML",
+            reply_markup=task_action_kb(t["id"], subs)
+        )
+
+
+async def cmd_done_list(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    uid = update.effective_user.id
+    done_tasks = await db_get_done_tasks(uid)
+
+    if not done_tasks:
+        await update.message.reply_text("📂 هنوز هیچ کاری را تمام نکرده‌اید.", reply_markup=main_reply_keyboard())
+        return
+
+    text = "✅ <b>تاریخچه کارهای انجام‌شده:</b>\n───────────────────────\n"
+    for t in done_tasks:
+        text += f"• <s>{t['title']}</s> <code>({t['done_at'][:10] if t['done_at'] else ''})</code>\n"
+
+    await update.message.reply_text(text, parse_mode="HTML", reply_markup=main_reply_keyboard())
+
+# ═══════════════════════════════════════════════════════════════════════════════
+# HANDLERS: QUICK ADD, POMODORO, HABITS, EISENHOWER, NOTES & SUBTASKS
 # ═══════════════════════════════════════════════════════════════════════════════
 
 async def quick_add_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     intro = (
-        "⚡ <b>ثبت سریع کار (Smart Quick Add)</b>\n"
+        "⚡ <b>ثبت سریع کار (Smart Natural Language)</b>\n"
         "───────────────────────\n"
-        "با این ابزار فوق‌العاده می‌توانید تمام مشخصات کار را در <b>یک پیام ساده</b> تایپ کنید!\n\n"
-        "📌 <b>راهنمای هشتگ‌ها و علامت‌ها:</b>\n"
-        "• <b>هشتگ دسته‌بندی:</b> <code>#کاری</code> | <code>#تحصیلی</code> | <code>#شخصی</code>\n"
-        "• <b>علامت اولویت:</b> <code>!ضروری</code> | <code>!کم</code>\n"
-        "• <b>علامت زمان:</b> <code>@18:30</code>\n\n"
-        "💡 <b>نمونه پیام ارسال:</b>\n"
-        "<code>بررسی گزارش مالی #کاری !ضروری @19:30</code>"
+        "متن کار را در یک سطر وارد کنید:\n"
+        "<code>تکمیل پروژه #کاری !ضروری @19:30</code>"
     )
-    await update.message.reply_text(intro, parse_mode="HTML", reply_markup=cancel_reset_kb())
+    await update.message.reply_text(intro, parse_mode="HTML", reply_markup=step_back_kb(None))
     return QUICK_ADD_STATE
 
 
@@ -757,78 +786,61 @@ async def quick_add_process(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
         title=parsed["title"],
         category=parsed["category"],
         priority=parsed["priority"],
-        due_date=parsed["due_date"]
+        due_date=parsed["due_date"],
+        is_urgent=parsed["is_urgent"],
+        is_important=parsed["is_important"]
     )
-
     task = await db_get_task(tid)
     await db_add_xp(uid, 10)
 
     await update.message.reply_text(
-        "🎉 <b>کار جدید با موفقیت تحلیل و ثبت شد! (+10 XP)</b>\n\n" + fmt_task_advanced(task),
+        "🎉 <b>کار جدید تحلیل و ثبت شد! (+10 XP)</b>\n\n" + fmt_task_advanced(task),
         parse_mode="HTML",
         reply_markup=main_reply_keyboard()
     )
+    await cmd_list(update, ctx)
     return ConversationHandler.END
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# HANDLERS: POMODORO TIMER
-# ═══════════════════════════════════════════════════════════════════════════════
 
 async def cmd_pomo_info(update: Update, _: ContextTypes.DEFAULT_TYPE):
     intro = (
-        "🍅 <b>تکنیک پومودورو (Pomodoro Technique) چیست؟</b>\n"
+        "🍅 <b>تکنیک پومودورو (Pomodoro Technique)</b>\n"
         "───────────────────────\n"
-        "تکنیک پومودورو یکی از معروف‌ترین روش‌های مدیریت زمان است:\n"
-        "۱. یک کار را انتخاب می‌کنید.\n"
-        "۲. <b>۲۵ دقیقه</b> با تمرکز کامل و بدون حواس‌پرتی روی آن کار می‌کنید.\n"
-        "۳. <b>۵ دقیقه</b> استراحت می‌کنید.\n\n"
-        "💡 <i>با کلیک روی دکمه «🍅 پومودورو» زیر هر کار در لیست، تایمر آن فعال می‌شود!</i>"
+        "۲۵ دقیقه تمرکز کاملاً عمیق + ۵ دقیقه استراحت.\n"
+        "💡 <i>جهت شروع، روی دکمه «🍅 پومودورو» زیر هر کار در لیست کلیک کنید!</i>"
     )
     await update.message.reply_text(intro, parse_mode="HTML", reply_markup=main_reply_keyboard())
 
 
 async def cb_pomo_start(update: Update, _: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
-    await q.answer("🍅 جلسه تمرکز پومودورو فعال شد!")
+    await q.answer("🍅 جلسه پومودورو شروع شد!")
     tid = int(q.data.split(":")[1])
 
-    await q.edit_message_text(
-        q.message.text + "\n\n🍅 <b>جلسه ۲۵ دقیقه‌ای تمرکز عمیق شروع شد... موفق باشید!</b>",
-        parse_mode="HTML"
-    )
-
-    await asyncio.sleep(5)
+    await q.edit_message_text(q.message.text + "\n\n🍅 <b>جلسه تمرکز در حال انجام است...</b>", parse_mode="HTML")
+    await asyncio.sleep(2)
     await db_increment_pomo(tid)
     await db_add_xp(update.effective_user.id, 25)
 
     await _bot.send_message(
         chat_id=update.effective_user.id,
-        text="🎉 <b>پومودورو به پایان رسید! (+25 XP)</b>\nاکنون ۵ دقیقه استراحت کنید و سپس به کار بازگردید. ☕",
+        text="🎉 <b>جلسه پومودورو به پایان رسید! (+25 XP)</b> ☕",
         parse_mode="HTML",
         reply_markup=main_reply_keyboard()
     )
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# HANDLERS: HABIT TRACKER
-# ═══════════════════════════════════════════════════════════════════════════════
 
 async def cmd_habits(update: Update, _: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     habits = await db_get_habits(uid)
-
-    intro = (
-        "🌱 <b>ردیاب عادت‌ها و زنجیره استمرار (Habit Tracker)</b>\n"
-        "───────────────────────\n"
-        "مهم‌ترین عامل موفقیت، استمرار است. با ثبت عادت‌های روزانه (مثل ورزش، مطالعه یا کتاب‌خوانی) "
-        "و ثبت روزانه آن‌ها، <b>زنجیره استمرار (Streak)</b> خود را حفظ کنید.\n\n"
-    )
+    intro = "🌱 <b>ردیاب عادت‌ها و زنجیره استمرار (Habits)</b>\n───────────────────────\n"
 
     if not habits:
         kb = InlineKeyboardMarkup([[InlineKeyboardButton("➕ تعریف عادت جدید", callback_data="add_habit_btn")]])
-        await update.message.reply_text(intro + "<i>هنوز هیچ عادتی تعریف نکرده‌اید!</i>", parse_mode="HTML", reply_markup=kb)
+        await update.message.reply_text(intro + "<i>هنوز عادتی ثبت نکرده‌اید.</i>", parse_mode="HTML", reply_markup=kb)
         return
 
-    text = intro + "📋 <b>عادت‌های فعال شما:</b>\n"
+    text = intro + "📋 <b>عادت‌های شما:</b>\n"
     kb_btns = []
     for h in habits:
         text += f"• <b>{h['title']}</b> ➔ 🔥 <code>{h['streak']}</code> روز استمرار\n"
@@ -836,7 +848,6 @@ async def cmd_habits(update: Update, _: ContextTypes.DEFAULT_TYPE):
             InlineKeyboardButton(f"✅ ثبت امروز: {h['title']}", callback_data=f"checkin_habit:{h['id']}"),
             InlineKeyboardButton("🗑", callback_data=f"del_habit:{h['id']}")
         ])
-
     kb_btns.append([InlineKeyboardButton("➕ تعریف عادت جدید", callback_data="add_habit_btn")])
     await update.message.reply_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(kb_btns))
 
@@ -844,7 +855,7 @@ async def cmd_habits(update: Update, _: ContextTypes.DEFAULT_TYPE):
 async def cb_add_habit_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
-    await q.message.reply_text("🌱 <b>عنوان عادت جدید را وارد کنید:</b>\n(مثال: ۳۰ دقیقه مطالعه روزانه)", parse_mode="HTML")
+    await q.message.reply_text("🌱 <b>عنوان عادت جدید را وارد کنید:</b>", parse_mode="HTML")
     return ADD_HABIT_STATE
 
 
@@ -852,8 +863,7 @@ async def add_habit_process(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     title = update.message.text.strip()
     uid = update.effective_user.id
     await db_add_habit(uid, title)
-
-    await update.message.reply_text(f"🎉 عادت جدید «<b>{title}</b>» با موفقیت اضافه شد!", parse_mode="HTML", reply_markup=main_reply_keyboard())
+    await update.message.reply_text(f"🎉 عادت «<b>{title}</b>» اضافه شد!", parse_mode="HTML", reply_markup=main_reply_keyboard())
     return ConversationHandler.END
 
 
@@ -862,64 +872,45 @@ async def cb_checkin_habit(update: Update, _: ContextTypes.DEFAULT_TYPE):
     hid = int(q.data.split(":")[1])
     await db_checkin_habit(hid)
     await db_add_xp(update.effective_user.id, 15)
-
-    await q.answer("🔥 ۱ روز به زنجیره استمرار شما اضافه شد (+15 XP)!")
-    await q.edit_message_text(q.message.text + "\n\n✅ <b>استمرار امروز ثبت شد! عالی هستید.</b>", parse_mode="HTML")
+    await q.answer("🔥 ۱ روز به زنجیره اضافه شد (+15 XP)!")
+    await q.edit_message_text(q.message.text + "\n\n✅ <b>استمرار ثبت شد!</b>", parse_mode="HTML")
 
 
 async def cb_del_habit(update: Update, _: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     hid = int(q.data.split(":")[1])
     await db_delete_habit(hid)
-    await q.answer("🗑 عادت حذف شد.")
+    await q.answer("🗑 حذف شد.")
     await q.delete_message()
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# HANDLERS: EISENHOWER MATRIX
-# ═══════════════════════════════════════════════════════════════════════════════
 
 async def cmd_eisenhower(update: Update, _: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     tasks = await db_get_tasks(uid)
+    intro = "📐 <b>ماتریس 4 گانه آیزنهاور (Eisenhower Matrix)</b>\n───────────────────────\n"
 
-    intro = (
-        "📐 <b>ماتریس آیزنهاور (Eisenhower Decision Matrix) چیست؟</b>\n"
-        "───────────────────────\n"
-        "این ماتریس وظایف شما را بر اساس دو معیار <b>«فوریت»</b> و <b>«اهمیت»</b> به ۴ گروه تقسیم می‌کند تا بدانید اولویت اول تمرکز شما چیست:\n\n"
-    )
-
-    q1 = [t['title'] for t in tasks if t['priority'] == 'High']
-    q2 = [t['title'] for t in tasks if t['priority'] == 'Medium']
-    q3 = [t['title'] for t in tasks if t['priority'] == 'Low']
+    q1 = [t['title'] for t in tasks if t['is_urgent'] and t['is_important']]
+    q2 = [t['title'] for t in tasks if not t['is_urgent'] and t['is_important']]
+    q3 = [t['title'] for t in tasks if t['is_urgent'] and not t['is_important']]
+    q4 = [t['title'] for t in tasks if not t['is_urgent'] and not t['is_important']]
 
     matrix_text = (
-        "🔥 <b>۱. فوری و مهم (همین الان انجام دهید):</b>\n" +
-        ("\n".join([f"• {x}" for x in q1]) if q1 else "<i>خالی</i>") + "\n\n"
-        "📅 <b>۲. غیرفوری ولی مهم (برنامه‌ریزی کنید):</b>\n" +
-        ("\n".join([f"• {x}" for x in q2]) if q2 else "<i>خالی</i>") + "\n\n"
-        "🟢 <b>۳. کم‌اهمیت / تفویض:</b>\n" +
-        ("\n".join([f"• {x}" for x in q3]) if q3 else "<i>خالی</i>")
+        "🔥 <b>۱. فوری و مهم (انجام دهید):</b>\n" + ("\n".join([f"• {x}" for x in q1]) if q1 else "<i>خالی</i>") + "\n\n"
+        "📅 <b>۲. غیرفوری ولی مهم (زمان‌بندی کنید):</b>\n" + ("\n".join([f"• {x}" for x in q2]) if q2 else "<i>خالی</i>") + "\n\n"
+        "⚡ <b>۳. فوری ولی کم‌اهمیت (واگذار کنید):</b>\n" + ("\n".join([f"• {x}" for x in q3]) if q3 else "<i>خالی</i>") + "\n\n"
+        "🟢 <b>۴. غیرفوری و کم‌اهمیت (حذف کنید):</b>\n" + ("\n".join([f"• {x}" for x in q4]) if q4 else "<i>خالی</i>")
     )
-
     await update.message.reply_text(intro + matrix_text, parse_mode="HTML", reply_markup=main_reply_keyboard())
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# HANDLERS: NOTION QUICK NOTES
-# ═══════════════════════════════════════════════════════════════════════════════
 
 async def cmd_notes(update: Update, _: ContextTypes.DEFAULT_TYPE):
     uid = update.effective_user.id
     notes = await db_get_notes(uid)
-
-    intro = (
-        "📝 <b>دفترچه یادداشت سریع (Notion Quick Notes)</b>\n"
-        "───────────────────────\n"
-        "ایده‌ها و یادداشت‌های ناگهانی خود را قبل از فراموشی در این بخش ذخیره کنید.\n\n"
-    )
+    intro = "📝 <b>دفترچه یادداشت سریع (Notion Style)</b>\n───────────────────────\n"
 
     if not notes:
         kb = InlineKeyboardMarkup([[InlineKeyboardButton("➕ ثبت یادداشت جدید", callback_data="add_note_btn")]])
-        await update.message.reply_text(intro + "<i>هیچ یادداشتی ثبت نشده است.</i>", parse_mode="HTML", reply_markup=kb)
+        await update.message.reply_text(intro + "<i>یادداشتی وجود ندارد.</i>", parse_mode="HTML", reply_markup=kb)
         return
 
     text = intro + "📋 <b>آخرین یادداشت‌های شما:</b>\n"
@@ -927,7 +918,6 @@ async def cmd_notes(update: Update, _: ContextTypes.DEFAULT_TYPE):
     for n in notes:
         text += f"▫️ {n['content']} <code>({n['created_at'][:10]})</code>\n"
         kb_btns.append([InlineKeyboardButton(f"🗑 حذف: {n['content'][:20]}...", callback_data=f"del_note:{n['id']}")])
-
     kb_btns.append([InlineKeyboardButton("➕ ثبت یادداشت جدید", callback_data="add_note_btn")])
     await update.message.reply_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(kb_btns))
 
@@ -935,16 +925,14 @@ async def cmd_notes(update: Update, _: ContextTypes.DEFAULT_TYPE):
 async def cb_add_note_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
-    await q.message.reply_text("📝 <b>متن یادداشت خود را تایپ کنید:</b>", parse_mode="HTML")
+    await q.message.reply_text("📝 <b>متن یادداشت را وارد کنید:</b>", parse_mode="HTML")
     return ADD_NOTE_STATE
 
 
 async def add_note_process(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     content = update.message.text.strip()
-    uid = update.effective_user.id
-    await db_add_note(uid, content)
-
-    await update.message.reply_text("✅ یادداشت جدید با موفقیت ذخیره شد!", parse_mode="HTML", reply_markup=main_reply_keyboard())
+    await db_add_note(update.effective_user.id, content)
+    await update.message.reply_text("✅ یادداشت ذخیره گردید!", parse_mode="HTML", reply_markup=main_reply_keyboard())
     return ConversationHandler.END
 
 
@@ -952,19 +940,15 @@ async def cb_del_note(update: Update, _: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     nid = int(q.data.split(":")[1])
     await db_delete_note(nid)
-    await q.answer("🗑 یادداشت حذف شد.")
+    await q.answer("🗑 حذف شد.")
     await q.delete_message()
 
-# ═══════════════════════════════════════════════════════════════════════════════
-# HANDLERS: SUBTASKS & TASK CALLBACKS
-# ═══════════════════════════════════════════════════════════════════════════════
 
 async def cb_add_subtask_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     await q.answer()
     tid = int(q.data.split(":")[1])
     ctx.user_data["target_task_id"] = tid
-
     await q.message.reply_text("☑️ <b>عنوان زیرکار (Subtask) را وارد کنید:</b>", parse_mode="HTML")
     return ADD_SUBTASK_STATE
 
@@ -972,16 +956,11 @@ async def cb_add_subtask_start(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 async def add_subtask_process(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     title = update.message.text.strip()
     tid = ctx.user_data.get("target_task_id")
-
     await db_add_subtask(tid, title)
     task = await db_get_task(tid)
     subs = await db_get_subtasks(tid)
 
-    await update.message.reply_text(
-        "✅ <b>زیرکار جدید اضافه شد:</b>\n\n" + fmt_task_advanced(task, subs),
-        parse_mode="HTML",
-        reply_markup=main_reply_keyboard()
-    )
+    await update.message.reply_text("✅ <b>زیرکار اضافه شد:</b>\n\n" + fmt_task_advanced(task, subs), parse_mode="HTML", reply_markup=main_reply_keyboard())
     return ConversationHandler.END
 
 
@@ -989,28 +968,25 @@ async def cb_toggle_subtask(update: Update, _: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     parts = q.data.split(":")
     sub_id, task_id = int(parts[1]), int(parts[2])
-
     await db_toggle_subtask(sub_id)
     await q.answer("تغییر وضعیت ثبت شد.")
-
     task = await db_get_task(task_id)
     subs = await db_get_subtasks(task_id)
     await q.edit_message_text(fmt_task_advanced(task, subs), parse_mode="HTML", reply_markup=task_action_kb(task_id, subs))
 
 
-async def cb_done_task(update: Update, _: ContextTypes.DEFAULT_TYPE):
+async def cb_done_task(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     tid = int(q.data.split(":")[1])
     uid = update.effective_user.id
-
     await db_mark_done(tid)
     res = await db_add_xp(uid, 20)
 
-    msg = "✅ <b>تبریک! این کار به اتمام رسید (+20 XP)</b>"
+    msg = "✅ <b>این کار انجام شد (+20 XP)!</b>"
     if res.get("leveled_up"):
-        msg += f"\n\n🎉 <b>ارتقاء سطح! شما به Level {res['level']} رسیدید!</b>"
+        msg += f"\n🎉 <b>تبریک! ارتقاء به Level {res['level']}!</b>"
 
-    await q.answer("✅ ثبت شد!")
+    await q.answer("✅ انجام شد!")
     await q.edit_message_text(q.message.text + f"\n\n{msg}", parse_mode="HTML")
 
 
@@ -1018,61 +994,108 @@ async def cb_del_task(update: Update, _: ContextTypes.DEFAULT_TYPE):
     q = update.callback_query
     tid = int(q.data.split(":")[1])
     await db_delete_task(tid)
-    await q.answer("🗑 کار حذف شد.")
+    await q.answer("🗑 حذف شد.")
     await q.delete_message()
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# WEB API FOR TELEGRAM WEB APP
+# WEB API SERVER (FULL REST API & CORS SUPPORT)
 # ═══════════════════════════════════════════════════════════════════════════════
 
 async def handle_get_tasks(request):
-    """ارسال لیست کارهای یک کاربر به وب‌اپ با فرمت JSON"""
     user_id = request.query.get("user_id")
     if not user_id:
         return web.json_response({"error": "user_id is required"}, status=400)
+    tasks = await db_get_tasks(int(user_id))
     
+    # همگام‌سازی زیرکارها برای وب‌اپ
+    for t in tasks:
+        t["subtasks"] = await db_get_subtasks(t["id"])
+        
+    return web.json_response({"status": "success", "tasks": tasks})
+
+async def handle_post_task(request):
     try:
-        user_id = int(user_id)
-        tasks = await db_get_tasks(user_id)
-        return web.json_response({"status": "success", "tasks": tasks})
+        data = await request.json()
+        tid = await db_add_task(
+            user_id=int(data["user_id"]),
+            title=data["title"],
+            description=data.get("description", ""),
+            category=data.get("category", "Personal"),
+            priority=data.get("priority", "Medium"),
+            due_date=data.get("due_date"),
+            is_urgent=data.get("is_urgent", 0),
+            is_important=data.get("is_important", 1)
+        )
+        return web.json_response({"status": "success", "id": tid})
     except Exception as e:
-        log.error(f"API Error: {e}")
         return web.json_response({"error": str(e)}, status=500)
 
-async def start_web_server():
-    """شروع سرور وب روی پورت Render"""
-    app = web.Application()
-    
-    # تنظیم CORS جهت مجوزدهی به مرورگر
-    cors = aiohttp_cors.setup(app, defaults={
-        "*": aiohttp_cors.ResourceOptions(
-            allow_credentials=True,
-            expose_headers="*",
-            allow_headers="*",
+async def handle_put_task(request):
+    try:
+        data = await request.json()
+        await db_update_task(
+            task_id=int(data["task_id"]),
+            title=data["title"],
+            description=data.get("description", ""),
+            category=data.get("category", "Personal"),
+            priority=data.get("priority", "Medium"),
+            due_date=data.get("due_date"),
+            is_urgent=data.get("is_urgent", 0),
+            is_important=data.get("is_important", 1)
         )
+        return web.json_response({"status": "success"})
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+async def handle_delete_task(request):
+    try:
+        task_id = request.match_info.get("id")
+        await db_delete_task(int(task_id))
+        return web.json_response({"status": "success"})
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+async def handle_mark_done(request):
+    try:
+        task_id = request.match_info.get("id")
+        await db_mark_done(int(task_id))
+        return web.json_response({"status": "success"})
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+async def handle_get_stats(request):
+    user_id = request.query.get("user_id")
+    if not user_id: return web.json_response({"error": "user_id required"}, status=400)
+    prof = await db_get_user_profile(int(user_id))
+    return web.json_response({"status": "success", "profile": prof})
+
+async def start_web_server():
+    app = web.Application()
+    cors = aiohttp_cors.setup(app, defaults={
+        "*": aiohttp_cors.ResourceOptions(allow_credentials=True, expose_headers="*", allow_headers="*", allow_methods="*")
     })
 
-    resource = app.router.add_resource("/api/tasks")
-    route = resource.add_route("GET", handle_get_tasks)
-    cors.add(route)
+    cors.add(app.router.add_get("/api/tasks", handle_get_tasks))
+    cors.add(app.router.add_post("/api/tasks", handle_post_task))
+    cors.add(app.router.add_put("/api/tasks", handle_put_task))
+    cors.add(app.router.add_delete("/api/tasks/{id}", handle_delete_task))
+    cors.add(app.router.add_post("/api/tasks/{id}/done", handle_mark_done))
+    cors.add(app.router.add_get("/api/stats", handle_get_stats))
 
     port = int(os.environ.get("PORT", 8080))
     runner = web.AppRunner(app)
     await runner.setup()
     site = web.TCPSite(runner, "0.0.0.0", port)
     await site.start()
-    log.info(f"Web API Server running on port {port} 🌐")
+    log.info(f"Enterprise Web Server Online on Port {port} 🌐")
 
 # ═══════════════════════════════════════════════════════════════════════════════
-# MAIN ENGINE & APPLICATION SETUP
+# ENGINE SETUP & MAIN RUNNER
 # ═══════════════════════════════════════════════════════════════════════════════
 
 async def post_init(application: Application):
     await application.bot.set_chat_menu_button(
-        menu_button=MenuButtonWebApp(
-            text="todo-list",
-            web_app=WebAppInfo(url="https://ornate-manatee-273466.netlify.app/")
-        )
+        menu_button=MenuButtonWebApp(text="todo-list", web_app=WebAppInfo(url=WEBAPP_URL))
     )
     start_scheduler(application.bot)
 
@@ -1080,7 +1103,7 @@ async def main_async():
     await init_db()
     app = Application.builder().token(BOT_TOKEN).post_init(post_init).build()
 
-    # Conversation Handlers
+    # 1. Conversation Handler کامل ثبت کار با قابلیت عقب رفتن
     add_conv = ConversationHandler(
         entry_points=[
             CommandHandler("add", add_start),
@@ -1089,38 +1112,46 @@ async def main_async():
         states={
             ADD_TITLE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, add_got_title),
-                CallbackQueryHandler(add_start, pattern="^reset_flow$"),
                 CallbackQueryHandler(cmd_cancel, pattern="^cancel_flow$")
             ],
             ADD_DESC: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, add_got_desc),
                 CommandHandler("skip", add_got_desc),
-                CallbackQueryHandler(add_start, pattern="^reset_flow$"),
+                CallbackQueryHandler(add_start, pattern=r"^goto:title$"),
                 CallbackQueryHandler(cmd_cancel, pattern="^cancel_flow$")
             ],
             ADD_CAT: [
                 CallbackQueryHandler(add_got_cat, pattern=r"^cat:"),
-                CallbackQueryHandler(add_start, pattern="^reset_flow$")
+                CallbackQueryHandler(add_got_title, pattern=r"^goto:desc$"),
+                CallbackQueryHandler(cmd_cancel, pattern="^cancel_flow$")
             ],
             ADD_PRI: [
                 CallbackQueryHandler(add_got_pri, pattern=r"^pri:"),
-                CallbackQueryHandler(add_start, pattern="^reset_flow$")
+                CallbackQueryHandler(add_got_desc, pattern=r"^goto:cat$"),
+                CallbackQueryHandler(cmd_cancel, pattern="^cancel_flow$")
+            ],
+            ADD_EISENHOWER: [
+                CallbackQueryHandler(add_got_eisenhower, pattern=r"^eisen:"),
+                CallbackQueryHandler(add_got_cat, pattern=r"^goto:pri$"),
+                CallbackQueryHandler(cmd_cancel, pattern="^cancel_flow$")
             ],
             ADD_DUE: [
                 MessageHandler(filters.TEXT & ~filters.COMMAND, add_got_due),
                 CommandHandler("skip", add_got_due),
-                CallbackQueryHandler(add_start, pattern="^reset_flow$"),
+                CallbackQueryHandler(add_got_pri, pattern=r"^goto:eisen$"),
                 CallbackQueryHandler(cmd_cancel, pattern="^cancel_flow$")
             ],
             ADD_REC: [
                 CallbackQueryHandler(add_got_rec, pattern=r"^rec:"),
-                CallbackQueryHandler(add_start, pattern="^reset_flow$")
+                CallbackQueryHandler(add_got_eisenhower, pattern=r"^goto:due$"),
+                CallbackQueryHandler(cmd_cancel, pattern="^cancel_flow$")
             ],
         },
-        fallbacks=[CommandHandler("cancel", cmd_cancel)],
+        fallbacks=[CommandHandler("cancel", cmd_cancel), CallbackQueryHandler(cmd_cancel, pattern="^cancel_flow$")],
         per_user=True,
     )
 
+    # 2. Conversation Handler ثبت سریع تک‌خطی
     quick_add_conv = ConversationHandler(
         entry_points=[MessageHandler(filters.Regex("^⚡ ثبت سریع کار$"), quick_add_start)],
         states={
@@ -1133,33 +1164,31 @@ async def main_async():
         per_user=True,
     )
 
+    # 3. Conversation Handler زیرکارها
     subtask_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(cb_add_subtask_start, pattern=r"^add_sub:")],
-        states={
-            ADD_SUBTASK_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_subtask_process)]
-        },
+        states={ADD_SUBTASK_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_subtask_process)]},
         fallbacks=[CommandHandler("cancel", cmd_cancel)],
         per_user=True
     )
 
+    # 4. Conversation Handler عادت‌ها
     habit_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(cb_add_habit_start, pattern="^add_habit_btn$")],
-        states={
-            ADD_HABIT_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_habit_process)]
-        },
+        states={ADD_HABIT_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_habit_process)]},
         fallbacks=[CommandHandler("cancel", cmd_cancel)],
         per_user=True
     )
 
+    # 5. Conversation Handler یادداشت‌ها
     note_conv = ConversationHandler(
         entry_points=[CallbackQueryHandler(cb_add_note_start, pattern="^add_note_btn$")],
-        states={
-            ADD_NOTE_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_note_process)]
-        },
+        states={ADD_NOTE_STATE: [MessageHandler(filters.TEXT & ~filters.COMMAND, add_note_process)]},
         fallbacks=[CommandHandler("cancel", cmd_cancel)],
         per_user=True
     )
 
+    # ثبت هندلرها
     app.add_handler(add_conv)
     app.add_handler(quick_add_conv)
     app.add_handler(subtask_conv)
@@ -1185,11 +1214,11 @@ async def main_async():
     app.add_handler(CallbackQueryHandler(cb_toggle_subtask, pattern=r"^toggle_sub:"))
 
     await start_web_server()
-    
+
     async with app:
         await app.initialize()
         await app.start()
-        log.info("Ultimate Task Manager Bot & Web API Started Successfully 🚀")
+        log.info("System Ready & Running Smoothly 🚀")
         await app.updater.start_polling(drop_pending_updates=True)
         await asyncio.Event().wait()
 
