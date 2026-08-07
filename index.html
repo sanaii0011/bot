@@ -19,7 +19,6 @@
       --warning: #ff9800;
     }
 
-    /* استایل تم سفارشی - کاربر میتواند رنگها را عوض کند */
     body.custom-theme {
       --bg-color: #2b2b2b;
       --text-color: #f1f1f1;
@@ -72,7 +71,6 @@
       z-index: 100;
     }
 
-    /* Modal Form */
     .modal-overlay {
       position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5);
       display: none; justify-content: center; align-items: center; z-index: 1000;
@@ -110,10 +108,8 @@
     <div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>در حال ارتباط با سرور...</div>
   </div>
 
-  <!-- دکمه شناور افزودن کار -->
   <button class="fab" onclick="openModal('add')"><i class="fas fa-plus"></i></button>
 
-  <!-- مدال (پاپ‌آپ) افزودن و ویرایش تسک -->
   <div class="modal-overlay" id="taskModal">
     <div class="modal">
       <h3 id="modalTitle">➕ افزودن کار جدید</h3>
@@ -156,26 +152,46 @@
   </div>
 
   <script>
-    // 🔗 آدرس سرور رندر ربات خود را اینجا بگذارید
     const API_BASE = "https://bot-kqte.onrender.com/api/tasks"; 
     
-    const tg = window.Telegram.WebApp;
-    tg.ready(); tg.expand();
-    const userId = tg.initDataUnsafe?.user?.id || 123456789; // Fallback for testing out of telegram
-    
-    if(tg.initDataUnsafe?.user) {
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      tg.ready();
+      tg.expand();
+    }
+
+    // دریافت آیدی کاربر از تلگرام یا URL
+    function getUserId() {
+      if (tg?.initDataUnsafe?.user?.id) {
+        return tg.initDataUnsafe.user.id;
+      }
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('user_id');
+    }
+
+    const userId = getUserId();
+
+    if (tg?.initDataUnsafe?.user?.first_name) {
       document.getElementById('greeting').innerText = `کارهای ${tg.initDataUnsafe.user.first_name}`;
     }
 
-    // شخصی سازی تم
     function toggleTheme() {
       document.body.classList.toggle('custom-theme');
-      tg.HapticFeedback.impactOccurred('light');
+      tg?.HapticFeedback?.impactOccurred('light');
     }
 
-    // بارگذاری لیست کارها از دیتابیس ربات
     async function fetchTasks() {
       const container = document.getElementById('tasks-container');
+
+      if (!userId) {
+        container.innerHTML = `
+          <div class="loader" style="color:var(--danger);">
+            ⚠️ شناسه کاربر یافت نشد!<br><br>
+            <small style="color:var(--hint-color);">لطفاً وب‌اپ را مستقیماً از داخل ربات تلگرام باز کنید.</small>
+          </div>`;
+        return;
+      }
+
       try {
         const res = await fetch(`${API_BASE}?user_id=${userId}`);
         const data = await res.json();
@@ -198,7 +214,6 @@
 
       let html = '';
       tasks.forEach(t => {
-        // Encode object to string for the edit button
         const taskJson = encodeURIComponent(JSON.stringify(t));
         
         html += `
@@ -224,24 +239,23 @@
       container.innerHTML = html;
     }
 
-    // عملیات دکمه‌ها
     async function markDone(id) {
-      tg.HapticFeedback.notificationOccurred('success');
-      document.getElementById(`task-${id}`).style.opacity = '0.5';
+      tg?.HapticFeedback?.notificationOccurred('success');
+      const el = document.getElementById(`task-${id}`);
+      if (el) el.style.opacity = '0.5';
       await fetch(`${API_BASE}/${id}/done`, { method: 'POST' });
       fetchTasks();
     }
 
     async function deleteTask(id) {
-      if(!confirm("آیا از حذف این کار مطمئن هستید؟")) return;
-      tg.HapticFeedback.impactOccurred('heavy');
+      if (!confirm("آیا از حذف این کار مطمئن هستید؟")) return;
+      tg?.HapticFeedback?.impactOccurred('heavy');
       await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
       fetchTasks();
     }
 
-    // مدیریت مدال (پاپ‌آپ)
     function openModal(mode, taskJsonStr = null) {
-      tg.HapticFeedback.impactOccurred('light');
+      tg?.HapticFeedback?.impactOccurred('light');
       const modal = document.getElementById('taskModal');
       
       if (mode === 'add') {
@@ -278,25 +292,28 @@
         priority: document.getElementById('tPri').value
       };
 
-      if(!payload.title) {
-        tg.showAlert("لطفاً عنوان کار را وارد کنید!");
+      if (!payload.title) {
+        if (tg?.showAlert) tg.showAlert("لطفاً عنوان کار را وارد کنید!");
+        else alert("لطفاً عنوان کار را وارد کنید!");
         return;
       }
 
-      tg.HapticFeedback.notificationOccurred('success');
+      tg?.HapticFeedback?.notificationOccurred('success');
       closeModal();
       document.getElementById('tasks-container').innerHTML = '<div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i><br>در حال ذخیره...</div>';
 
       if (id) {
-        // ویرایش
-        await fetch(`${API_BASE}/${id}`, {
-          method: 'PUT', headers: {'Content-Type': 'application/json'},
-          body: JSON.stringify(payload)
+        // اصلاح متد ویرایش (مطابق با API پایتون)
+        await fetch(API_BASE, {
+          method: 'PUT',
+          headers: {'Content-Type': 'application/json'},
+          body: JSON.stringify({ ...payload, task_id: parseInt(id) })
         });
       } else {
         // افزودن جدید
         await fetch(API_BASE, {
-          method: 'POST', headers: {'Content-Type': 'application/json'},
+          method: 'POST',
+          headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(payload)
         });
       }
@@ -304,7 +321,6 @@
       fetchTasks();
     }
 
-    // لود اولیه
     fetchTasks();
   </script>
 </body>
