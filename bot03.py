@@ -176,6 +176,27 @@ async def init_db():
         """)
         await db.commit()
 
+# --- DB HELPERS: NOTES ---
+
+async def db_add_note(user_id: int, content: str):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            "INSERT INTO notes (user_id, content) VALUES (?, ?)",
+            (user_id, content)
+        )
+        await db.commit()
+
+async def db_get_notes(user_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM notes WHERE user_id = ? ORDER BY id DESC", (user_id,)) as cur:
+            return await cur.fetchall()
+
+async def db_delete_note(note_id: int, user_id: int):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("DELETE FROM notes WHERE id = ? AND user_id = ?", (note_id, user_id))
+        await db.commit()
+
 # --- DB HELPERS: TASKS ---
 
 async def db_add_task(user_id: int, title: str, description: str = "",
@@ -1119,6 +1140,35 @@ async def handle_get_stats(request):
     prof = await db_get_user_profile(int(user_id))
     return web.json_response({"status": "success", "profile": prof})
 
+async def handle_get_notes(request):
+    user_id = request.query.get("user_id")
+    if not user_id:
+        return web.json_response({"error": "user_id is required"}, status=400)
+    
+    notes = await db_get_notes(int(user_id))
+    notes_list = [{"id": n["id"], "content": n["content"], "created_at": n["created_at"]} for n in notes]
+    return web.json_response({"status": "success", "notes": notes_list})
+
+async def handle_post_note(request):
+    try:
+        data = await request.json()
+        await db_add_note(
+            user_id=int(data["user_id"]),
+            content=data["content"]
+        )
+        return web.json_response({"status": "success"})
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
+async def handle_delete_note(request):
+    try:
+        note_id = request.match_info.get("id")
+        user_id = request.query.get("user_id", 0)
+        await db_delete_note(int(note_id), int(user_id))
+        return web.json_response({"status": "success"})
+    except Exception as e:
+        return web.json_response({"error": str(e)}, status=500)
+
 async def start_web_server():
     app = web.Application()
     cors = aiohttp_cors.setup(app, defaults={
@@ -1131,6 +1181,9 @@ async def start_web_server():
     cors.add(app.router.add_delete("/api/tasks/{id}", handle_delete_task))
     cors.add(app.router.add_post("/api/tasks/{id}/done", handle_mark_done))
     cors.add(app.router.add_get("/api/stats", handle_get_stats))
+    cors.add(app.router.add_get("/api/notes", handle_get_notes))
+    cors.add(app.router.add_post("/api/notes", handle_post_note))
+    cors.add(app.router.add_delete("/api/notes/{id}", handle_delete_note))
 
     port = int(os.environ.get("PORT", 8080))
     runner = web.AppRunner(app)
@@ -1148,6 +1201,46 @@ async def post_init(application: Application):
         menu_button=MenuButtonWebApp(text="todo-list", web_app=WebAppInfo(url=WEBAPP_URL))
     )
     start_scheduler(application.bot)
+
+# --- TELEGRAM HANDLERS: NOTES ---
+
+async def cmd_notes(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    user_id = update.effective_user.id
+    notes = await db_get_notes(user_id)
+    
+    if not notes:
+        await update.message.reply_text("📝 دفترچه یادداشت شما خالی است.\nمی‌توانید از طریق وب‌اپ یادداشت جدید اضافه کنید.")
+        return
+
+    text = "📝 <b>دفترچه یادداشت‌های شما:</b>\n───────────────────────\n"
+    buttons = []
+    for n in notes:
+        text += f"🔹 {n['content']}\n🕒 <i>{n['created_at']}</i>\n───────────────────────\n"
+        buttons.append([InlineKeyboardButton(f"🗑 حذف: {n['content'][:20]}...", callback_data=f"del_note:{n['id']}")])
+
+    await update.message.reply_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(buttons))
+
+async def cb_del_note(update: Update, context: ContextTypes.DEFAULT_TYPE):
+    q = update.callback_query
+    user_id = q.from_user.id
+    note_id = int(q.data.split(":")[1])
+    
+    await db_delete_note(note_id, user_id)
+    await q.answer("یادداشت با موفقیت حذف شد!", show_alert=True)
+    
+    # به‌روزرسانی لیست بعد از حذف
+    notes = await db_get_notes(user_id)
+    if not notes:
+        await q.edit_message_text("📝 دفترچه یادداشت شما خالی است.")
+        return
+    
+    text = "📝 <b>دفترچه یادداشت‌های شما:</b>\n───────────────────────\n"
+    buttons = []
+    for n in notes:
+        text += f"🔹 {n['content']}\n🕒 <i>{n['created_at']}</i>\n───────────────────────\n"
+        buttons.append([InlineKeyboardButton(f"🗑 حذف: {n['content'][:20]}...", callback_data=f"del_note:{n['id']}")])
+    
+    await q.edit_message_text(text, parse_mode="HTML", reply_markup=InlineKeyboardMarkup(buttons))
 
 async def cmd_admin(update: Update, context: ContextTypes.DEFAULT_TYPE):
     user_id = update.effective_user.id
