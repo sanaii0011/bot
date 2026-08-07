@@ -1183,17 +1183,17 @@ async def handle_admin_all_data(request):
         if not user_id or int(user_id) != 7681488759:
             return web.json_response({"success": False, "message": "دسترسی غیرمجاز!"}, status=403)
         
-        # استخراج اطلاعات کاربران از دیتابیس شما (مشابه همان کاری که برای دستور ادمین در تلگرام انجام می‌دهید)
         users_data = []
-        # فرض بر این است که دیتابیس شما لیستی از کاربران را برمی‌گرداند:
-        all_users = await db.get_all_users() # یا متدی که برای گرفتن کاربران دارید
+        # استفاده از تابع استاندارد دیتابیس شما برای گرفتن لیست کاربران
+        users, _ = await db_get_users_list(page=1, per_page=100)
         
-        for u in all_users:
-            user_tasks = await db.get_user_tasks(u.id)
-            user_notes = await db.get_user_notes(u.id)
+        for u in users:
+            u_id, f_name, u_name, lvl, xp = u
+            user_tasks = await db_get_tasks(u_id)
+            user_notes = await db_get_notes(u_id)
             users_data.append({
-                "telegram_id": getattr(u, 'telegram_id', u.id),
-                "name": getattr(u, 'first_name', 'بدون نام'),
+                "telegram_id": u_id,
+                "name": f_name or u_name or f"کاربر {u_id}",
                 "tasks": user_tasks,
                 "notes": user_notes
             })
@@ -1201,6 +1201,7 @@ async def handle_admin_all_data(request):
         return web.json_response({"success": True, "users": users_data})
     except Exception as e:
         return web.json_response({"error": str(e)}, status=500)
+        
 async def start_web_server():
     app = web.Application()
     cors = aiohttp_cors.setup(app, defaults={
