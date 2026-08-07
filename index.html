@@ -160,16 +160,49 @@
       tg.expand();
     }
 
-    // دریافت آیدی کاربر از تلگرام یا URL
-    function getUserId() {
-      if (tg?.initDataUnsafe?.user?.id) {
-        return tg.initDataUnsafe.user.id;
-      }
-      const urlParams = new URLSearchParams(window.location.search);
-      return urlParams.get('user_id');
-    }
+    function getReliableUserId() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const tg = window.Telegram?.WebApp;
 
-    const userId = getUserId();
+  // ۱. بررسی از طریق URL query parameter (برای دسکتاپ)
+  let uid = urlParams.get('user_id');
+  if (uid) {
+    localStorage.setItem('tg_user_id', uid);
+    return uid;
+  }
+
+  // ۲. بررسی از طریق initDataUnsafe تلگرام
+  if (tg?.initDataUnsafe?.user?.id) {
+    uid = tg.initDataUnsafe.user.id;
+    localStorage.setItem('tg_user_id', uid);
+    return uid;
+  }
+
+  // ۳. پارس کردن دستی initData خام تلگرام
+  if (tg?.initData) {
+    try {
+      const initParams = new URLSearchParams(tg.initData);
+      const userStr = initParams.get('user');
+      if (userStr) {
+        const userObj = JSON.parse(userStr);
+        if (userObj.id) {
+          localStorage.setItem('tg_user_id', userObj.id);
+          return userObj.id;
+        }
+      }
+    } catch (e) {
+      console.error("Error parsing initData", e);
+    }
+  }
+
+  // ۴. خواندن آیدی ذخیره‌شده از نشست‌های قبلی
+  const cachedId = localStorage.getItem('tg_user_id');
+  if (cachedId) return cachedId;
+
+  return null;
+}
+
+const userId = getReliableUserId();
 
     if (tg?.initDataUnsafe?.user?.first_name) {
       document.getElementById('greeting').innerText = `کارهای ${tg.initDataUnsafe.user.first_name}`;
