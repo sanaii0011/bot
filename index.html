@@ -352,6 +352,21 @@
     </div>
   </div>
 
+  <!-- TAB NOTES: NOTEBOOK VIEW -->
+  <div id="tabNotes" class="tab-content">
+    <div class="glass" style="padding: 20px; margin-bottom: 20px;">
+      <h3 style="margin-bottom: 12px;"><i class="fas fa-sticky-note" style="color: var(--primary);"></i> دفترچه یادداشت سریع</h3>
+      <div class="form-group">
+        <textarea id="noteContentInput" rows="3" placeholder="یادداشت جدید خود را بنویسید..." style="width: 100%; border-radius: 12px; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); color: var(--text); font-family: inherit; resize: vertical; outline: none;"></textarea>
+      </div>
+      <button class="btn-main" style="width: 100%;" onclick="saveNote()"><i class="fas fa-plus"></i> ثبت یادداشت</button>
+    </div>
+
+    <div id="notesContainer" class="task-list">
+      <div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
+    </div>
+  </div>
+
   <!-- TAB 4: CUSTOMIZER & SETTINGS VIEW -->
   <div id="tabSettings" class="tab-content">
     <div class="glass" style="padding: 20px;">
@@ -377,6 +392,7 @@
     <div class="nav-item active" onclick="switchTab('tabTasks', this)"><i class="fas fa-list-check"></i><span>وظایف</span></div>
     <div class="nav-item" onclick="switchTab('tabMatrix', this)"><i class="fas fa-table-cells-large"></i><span>ماتریس</span></div>
     <div class="nav-item" onclick="switchTab('tabPomo', this)"><i class="fas fa-stopwatch"></i><span>پومودورو</span></div>
+    <div class="nav-item" onclick="switchTab('tabNotes', this)"><i class="fas fa-sticky-note"></i><span>یادداشت‌ها</span></div>
     <div class="nav-item" onclick="switchTab('tabSettings', this)"><i class="fas fa-sliders"></i><span>تنظیمات</span></div>
   </div>
 
@@ -479,6 +495,7 @@
       document.getElementById(tabId).classList.add('active');
       el.classList.add('active');
       if (tabId === 'tabMatrix') renderMatrix();
+      if (tabId === 'tabNotes') fetchNotes();
     }
 
     // FETCH STATS
@@ -512,6 +529,71 @@
         renderTasks();
       } catch (err) {
         container.innerHTML = '<div class="loader" style="color:var(--danger);">⚠️ خطا در دریافت اطلاعات از سرور</div>';
+      }
+    }
+
+    // --- NOTES MANAGEMENT ---
+    async function fetchNotes() {
+      const container = document.getElementById('notesContainer');
+      if (!userId) return;
+
+      try {
+        const res = await fetch(`${API_BASE}/notes?user_id=${userId}`);
+        const data = await res.json();
+        if (data.status === "success") {
+          if (!data.notes || data.notes.length === 0) {
+            container.innerHTML = '<div class="loader">📝 هیچ یادداشتی ثبت نشده است.</div>';
+            return;
+          }
+          let html = '';
+          data.notes.forEach(n => {
+            html += `
+              <div class="glass task-card" style="margin-bottom: 10px;">
+                <div style="white-space: pre-wrap; font-size: 0.9em; line-height: 1.6; margin-bottom: 10px;">${n.content}</div>
+                <div class="card-footer" style="justify-content: space-between; align-items: center;">
+                  <span style="font-size: 0.75em; color: var(--text-sub);">🕒 ${n.created_at}</span>
+                  <button class="btn-action delete" onclick="deleteNote(${n.id})"><i class="fas fa-trash"></i> حذف</button>
+                </div>
+              </div>
+            `;
+          });
+          container.innerHTML = html;
+        }
+      } catch (e) {
+        container.innerHTML = '<div class="loader" style="color:var(--danger);">⚠️ خطا در دریافت یادداشت‌ها</div>';
+      }
+    }
+
+    async function saveNote() {
+      const input = document.getElementById('noteContentInput');
+      const content = input.value.trim();
+      if (!content) return alert("لطفاً متنی برای یادداشت بنویسید!");
+
+      try {
+        const res = await fetch(`${API_BASE}/notes`, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ user_id: parseInt(userId), content: content })
+        });
+        const data = await res.json();
+        if (data.status === "success") {
+          input.value = '';
+          tg?.HapticFeedback?.notificationOccurred('success');
+          fetchNotes();
+        }
+      } catch(e) {
+        alert("خطا در ثبت یادداشت!");
+      }
+    }
+
+    async function deleteNote(id) {
+      if (!confirm("آیا از حذف این یادداشت مطمئن هستید؟")) return;
+      try {
+        await fetch(`${API_BASE}/notes/${id}?user_id=${userId}`, { method: 'DELETE' });
+        tg?.HapticFeedback?.impactOccurred('heavy');
+        fetchNotes();
+      } catch(e) {
+        alert("خطا در حذف یادداشت!");
       }
     }
 
@@ -686,6 +768,7 @@
 
     fetchStats();
     fetchTasks();
+    fetchNotes();
   </script>
 </body>
 </html>
