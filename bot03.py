@@ -199,6 +199,15 @@ async def db_delete_note(note_id: int, user_id: int):
         await db.execute("DELETE FROM notes WHERE id = ? AND user_id = ?", (note_id, user_id))
         await db.commit()
 
+async def db_upsert_user(user_id: int, first_name: Optional[str], username: Optional[str]):
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute(
+            """INSERT INTO users (user_id, first_name, username) VALUES (?, ?, ?)
+               ON CONFLICT(user_id) DO UPDATE SET first_name=excluded.first_name, username=excluded.username""",
+            (user_id, first_name, username)
+        )
+        await db.commit()
+
 # --- DB HELPERS: TASKS ---
 
 async def db_add_task(user_id: int, title: str, description: str = "",
@@ -726,6 +735,8 @@ async def add_got_rec(update: Update, ctx: ContextTypes.DEFAULT_TYPE):
 # ═══════════════════════════════════════════════════════════════════════════════
 
 async def cmd_start(update: Update, _: ContextTypes.DEFAULT_TYPE):
+    user = update.effective_user
+    await db_upsert_user(user.id, user.first_name, user.username)
     text = (
         "🚀 <b>به سیستم مدیریت وظایف پیشرفته خوش آمدید!</b>\n"
         "───────────────────────\n"
