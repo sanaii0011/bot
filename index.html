@@ -8,23 +8,16 @@
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
   <style>
     :root {
-      --bg-color: var(--tg-theme-bg-color, #f4f6f8);
-      --text-color: var(--tg-theme-text-color, #222222);
-      --card-bg: var(--tg-theme-secondary-bg-color, #ffffff);
-      --button-color: var(--tg-theme-button-color, #2481cc);
-      --button-text: var(--tg-theme-button-text-color, #ffffff);
-      --hint-color: var(--tg-theme-hint-color, #999999);
-      --danger: #ff5252;
-      --success: #4caf50;
-      --warning: #ff9800;
-    }
-
-    body.custom-theme {
-      --bg-color: #2b2b2b;
-      --text-color: #f1f1f1;
-      --card-bg: #3a3a3a;
-      --button-color: #00bcd4;
-      --hint-color: #bbbbbb;
+      --bg-color: var(--tg-theme-bg-color, #0f172a);
+      --text-color: var(--tg-theme-text-color, #f8fafc);
+      --card-bg: var(--tg-theme-secondary-bg-color, #1e293b);
+      --primary: var(--tg-theme-button-color, #3b82f6);
+      --primary-text: var(--tg-theme-button-text-color, #ffffff);
+      --hint-color: var(--tg-theme-hint-color, #94a3b8);
+      --accent: #8b5cf6;
+      --danger: #ef4444;
+      --success: #10b981;
+      --warning: #f59e0b;
     }
 
     body {
@@ -32,92 +25,156 @@
       background-color: var(--bg-color);
       color: var(--text-color);
       margin: 0; padding: 16px; direction: rtl;
-      transition: background-color 0.3s, color 0.3s;
+      user-select: none;
+      -webkit-tap-highlight-color: transparent;
     }
 
-    .top-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid rgba(128,128,128,0.2); padding-bottom: 10px;}
-    .top-bar h2 { margin: 0; font-size: 1.3em; }
-    .theme-btn { background: none; border: none; font-size: 1.2em; color: var(--text-color); cursor: pointer; }
+    /* Gamification Header Card */
+    .profile-card {
+      background: linear-gradient(135deg, rgba(59, 130, 246, 0.2), rgba(139, 92, 246, 0.2));
+      border: 1px solid rgba(255, 255, 255, 0.1);
+      backdrop-filter: blur(10px);
+      border-radius: 16px; padding: 16px; margin-bottom: 20px;
+      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    }
+    .profile-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; }
+    .user-info h3 { margin: 0; font-size: 1.1em; display: flex; align-items: center; gap: 8px; }
+    .badge-pill { background: rgba(139, 92, 246, 0.3); color: #c084fc; font-size: 0.75em; padding: 3px 10px; border-radius: 12px; border: 1px solid rgba(192, 132, 252, 0.3); }
+    
+    .xp-bar-container { background: rgba(0, 0, 0, 0.3); border-radius: 10px; height: 10px; width: 100%; overflow: hidden; position: relative; }
+    .xp-bar-fill { background: linear-gradient(90deg, #3b82f6, #10b981); height: 100%; width: 0%; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+    .xp-stats { display: flex; justify-content: space-between; font-size: 0.75em; color: var(--hint-color); margin-top: 6px; }
 
+    /* Category Filter Tabs */
+    .filter-tabs { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 8px; margin-bottom: 16px; scrollbar-width: none; }
+    .filter-tabs::-webkit-scrollbar { display: none; }
+    .tab-btn { background: var(--card-bg); color: var(--hint-color); border: 1px solid rgba(255,255,255,0.05); padding: 8px 14px; border-radius: 20px; font-size: 0.85em; white-space: nowrap; cursor: pointer; transition: all 0.2s; }
+    .tab-btn.active { background: var(--primary); color: var(--primary-text); font-weight: bold; }
+
+    /* Task Card Animations */
     .task-card {
-      background-color: var(--card-bg); border-radius: 12px; padding: 16px; margin-bottom: 12px;
-      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.05); position: relative;
+      background: var(--card-bg); border-radius: 14px; padding: 14px; margin-bottom: 12px;
+      border: 1px solid rgba(255, 255, 255, 0.05);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      animation: slideUp 0.3s ease-out forwards;
+      transition: transform 0.2s, opacity 0.3s;
     }
-    
-    .task-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;}
-    .task-title { font-weight: bold; font-size: 1.1em; }
-    .task-desc { font-size: 0.9em; color: var(--hint-color); margin-bottom: 12px; line-height: 1.4;}
-    
-    .badges { display: flex; gap: 8px; flex-wrap: wrap; margin-bottom: 15px;}
-    .badge { padding: 4px 8px; border-radius: 6px; font-size: 0.75em; background: rgba(128,128,128,0.1); }
-    .badge.high { border-right: 3px solid var(--danger); }
-    .badge.med { border-right: 3px solid var(--warning); }
-    .badge.low { border-right: 3px solid var(--success); }
+    @keyframes slideUp {
+      from { opacity: 0; transform: translateY(15px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+    .task-card.completing { transform: scale(0.95); opacity: 0; }
 
-    .card-actions { display: flex; gap: 8px; justify-content: flex-end;}
-    .btn-icon {
-      background: none; border: none; padding: 8px; border-radius: 8px; cursor: pointer;
-      font-size: 1.1em; transition: 0.2s; background: rgba(128,128,128,0.1); color: var(--text-color);
-    }
-    .btn-icon.done { color: var(--success); }
-    .btn-icon.del { color: var(--danger); }
+    .task-header { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; }
+    .task-title { font-weight: 600; font-size: 1em; line-height: 1.4; }
+    .task-desc { font-size: 0.85em; color: var(--hint-color); margin: 8px 0; }
+
+    .badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 10px; }
+    .badge { padding: 3px 8px; border-radius: 6px; font-size: 0.7em; background: rgba(255,255,255,0.05); }
+    .badge.high { border-right: 3px solid var(--danger); background: rgba(239, 68, 68, 0.1); }
+    .badge.med { border-right: 3px solid var(--warning); background: rgba(245, 158, 11, 0.1); }
+    .badge.low { border-right: 3px solid var(--success); background: rgba(16, 185, 129, 0.1); }
+
+    .card-actions { display: flex; gap: 8px; justify-content: flex-end; margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.05); padding-top: 8px; }
+    .btn-icon { background: rgba(255,255,255,0.05); border: none; padding: 8px 12px; border-radius: 8px; color: var(--text-color); cursor: pointer; transition: 0.2s; font-size: 0.9em; }
+    .btn-icon.done { background: rgba(16, 185, 129, 0.15); color: var(--success); }
+    .btn-icon.del { background: rgba(239, 68, 68, 0.15); color: var(--danger); }
     .btn-icon:active { transform: scale(0.9); }
 
+    /* Floating Action Button (FAB) */
     .fab {
-      position: fixed; bottom: 20px; right: 20px; width: 60px; height: 60px;
-      background-color: var(--button-color); color: var(--button-text);
+      position: fixed; bottom: 24px; left: 24px; width: 56px; height: 56px;
+      background: linear-gradient(135deg, var(--primary), var(--accent)); color: white;
       border-radius: 50%; display: flex; justify-content: center; align-items: center;
-      font-size: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.3); cursor: pointer; border: none;
-      z-index: 100;
+      font-size: 22px; box-shadow: 0 8px 20px rgba(59, 130, 246, 0.4); cursor: pointer; border: none;
+      z-index: 90; transition: transform 0.2s;
     }
+    .fab:active { transform: scale(0.9) rotate(90deg); }
 
+    /* XP Pop-up Toast */
+    .xp-toast {
+      position: fixed; top: 20px; left: 50%; transform: translateX(-50%) translateY(-100px);
+      background: linear-gradient(135deg, #10b981, #059669); color: white;
+      padding: 12px 24px; border-radius: 30px; font-weight: bold; font-size: 0.95em;
+      box-shadow: 0 10px 25px rgba(16, 185, 129, 0.4); z-index: 2000;
+      display: flex; align-items: center; gap: 8px;
+      transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+    }
+    .xp-toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* Modal Styling */
     .modal-overlay {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.5);
-      display: none; justify-content: center; align-items: center; z-index: 1000;
+      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.7);
+      backdrop-filter: blur(5px); display: none; justify-content: center; align-items: flex-end; z-index: 1000;
     }
     .modal {
-      background: var(--card-bg); width: 90%; max-width: 400px; border-radius: 16px; padding: 20px;
-      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+      background: var(--card-bg); width: 100%; max-width: 450px; border-radius: 24px 24px 0 0; padding: 24px;
+      box-shadow: 0 -10px 30px rgba(0,0,0,0.3); animation: slideUpModal 0.3s ease-out;
     }
-    .modal h3 { margin-top: 0; }
-    .form-group { margin-bottom: 15px; }
-    .form-group label { display: block; margin-bottom: 5px; font-size: 0.9em; }
+    @keyframes slideUpModal { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    .form-group { margin-bottom: 14px; }
+    .form-group label { display: block; margin-bottom: 6px; font-size: 0.85em; color: var(--hint-color); }
     .form-group input, .form-group select, .form-group textarea {
-      width: 100%; padding: 10px; border-radius: 8px; border: 1px solid var(--hint-color);
-      background: transparent; color: var(--text-color); box-sizing: border-box; font-family: inherit;
+      width: 100%; padding: 12px; border-radius: 10px; border: 1px solid rgba(255,255,255,0.1);
+      background: rgba(0,0,0,0.2); color: var(--text-color); box-sizing: border-box; font-family: inherit;
     }
     .modal-actions { display: flex; gap: 10px; margin-top: 20px; }
-    .btn { flex: 1; padding: 12px; border: none; border-radius: 8px; cursor: pointer; font-weight: bold; }
-    .btn-primary { background: var(--button-color); color: var(--button-text); }
-    .btn-cancel { background: rgba(128,128,128,0.2); color: var(--text-color); }
+    .btn { flex: 1; padding: 12px; border: none; border-radius: 10px; cursor: pointer; font-weight: bold; }
+    .btn-primary { background: var(--primary); color: var(--primary-text); }
+    .btn-cancel { background: rgba(255,255,255,0.1); color: var(--text-color); }
 
-    .loader { text-align: center; color: var(--hint-color); margin-top: 40px; }
+    .loader { text-align: center; color: var(--hint-color); padding: 40px 0; }
   </style>
 </head>
 <body>
 
-  <div class="top-bar">
-    <div>
-      <h2 id="greeting">کارهای من</h2>
-      <span style="font-size: 0.8em; color: var(--hint-color);">مدیریت زنده و مستقیم</span>
+  <!-- XP Toast Notification -->
+  <div id="xpToast" class="xp-toast"><i class="fas fa-trophy"></i> <span id="xpToastText">+۲۰ امتیاز XP دریافت شد!</span></div>
+
+  <!-- Gamification Profile Header -->
+  <div class="profile-card">
+    <div class="profile-header">
+      <div class="user-info">
+        <h3 id="userName">کارهای من <span id="userBadge" class="badge-pill">🌱 تازه کار</span></h3>
+      </div>
+      <div style="text-align: left;">
+        <span style="font-size: 0.8em; color: var(--hint-color);">سطح</span>
+        <strong id="userLevel" style="font-size: 1.1em; color: var(--accent); display: block;">Lvl 1</strong>
+      </div>
     </div>
-    <button class="theme-btn" onclick="toggleTheme()"><i class="fas fa-palette"></i></button>
+    <div class="xp-bar-container">
+      <div id="xpFill" class="xp-bar-fill"></div>
+    </div>
+    <div class="xp-stats">
+      <span>پیشرفت مرحله</span>
+      <span id="xpText">0 / 100 XP</span>
+    </div>
   </div>
 
+  <!-- Filter Tabs -->
+  <div class="filter-tabs">
+    <button class="tab-btn active" onclick="filterTasks('All', this)">🌐 همه</button>
+    <button class="tab-btn" onclick="filterTasks('Personal', this)">👤 شخصی</button>
+    <button class="tab-btn" onclick="filterTasks('Work', this)">💼 کاری</button>
+    <button class="tab-btn" onclick="filterTasks('Study', this)">📚 تحصیلی</button>
+  </div>
+
+  <!-- Task Container -->
   <div id="tasks-container">
-    <div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>در حال ارتباط با سرور...</div>
+    <div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>در حال بارگذاری...</div>
   </div>
 
   <button class="fab" onclick="openModal('add')"><i class="fas fa-plus"></i></button>
 
+  <!-- Task Modal -->
   <div class="modal-overlay" id="taskModal">
     <div class="modal">
-      <h3 id="modalTitle">➕ افزودن کار جدید</h3>
+      <h3 id="modalTitle" style="margin-top:0;">➕ افزودن کار جدید</h3>
       <input type="hidden" id="taskId">
       
       <div class="form-group">
         <label>عنوان کار *</label>
-        <input type="text" id="tTitle" placeholder="مثلا: خرید کتاب...">
+        <input type="text" id="tTitle" placeholder="مثلا: مطالعه فصل سوم...">
       </div>
       
       <div class="form-group">
@@ -152,119 +209,100 @@
   </div>
 
   <script>
-    const API_BASE = "https://bot-kqte.onrender.com/api/tasks"; 
-    
+    const API_BASE = "https://bot-kqte.onrender.com/api";
+    let allTasks = [];
+    let currentFilter = 'All';
+
     const tg = window.Telegram?.WebApp;
     if (tg) {
       tg.ready();
       tg.expand();
     }
 
-   function getReliableUserId() {
-  const tg = window.Telegram?.WebApp;
-
-  // ۱. دریافت مستقیم از SDK تلگرام
-  if (tg?.initDataUnsafe?.user?.id) {
-    const id = tg.initDataUnsafe.user.id;
-    localStorage.setItem('tg_user_id', id);
-    return id;
-  }
-
-  // ۲. دریافت از URL Query Parameter (مانند ?user_id=123)
-  const urlParams = new URLSearchParams(window.location.search);
-  let uid = urlParams.get('user_id');
-  if (uid) {
-    localStorage.setItem('tg_user_id', uid);
-    return uid;
-  }
-
-  // ۳. استخراج از URL Hash مخصوص تلگرام دسکتاپ (#tgWebAppData=...)
-  try {
-    const hash = window.location.hash.substring(1);
-    if (hash) {
-      const hashParams = new URLSearchParams(hash);
-      const rawData = hashParams.get('tgWebAppData') || hash;
-      const dataParams = new URLSearchParams(rawData);
-      const userStr = dataParams.get('user');
-      if (userStr) {
-        const userObj = JSON.parse(decodeURIComponent(userStr));
-        if (userObj?.id) {
-          localStorage.setItem('tg_user_id', userObj.id);
-          return userObj.id;
+    function getReliableUserId() {
+      if (tg?.initDataUnsafe?.user?.id) return tg.initDataUnsafe.user.id;
+      const urlParams = new URLSearchParams(window.location.search);
+      let uid = urlParams.get('user_id');
+      if (uid) return uid;
+      try {
+        const hash = window.location.hash.substring(1);
+        if (hash) {
+          const userStr = new URLSearchParams(new URLSearchParams(hash).get('tgWebAppData') || hash).get('user');
+          if (userStr) return JSON.parse(decodeURIComponent(userStr))?.id;
         }
-      }
+      } catch (e) {}
+      return localStorage.getItem('tg_user_id') || null;
     }
-  } catch (e) {
-    console.error("Hash parsing error:", e);
-  }
 
-  // ۴. پارس کردن initData خام
-  if (tg?.initData) {
-    try {
-      const initParams = new URLSearchParams(tg.initData);
-      const userStr = initParams.get('user');
-      if (userStr) {
-        const userObj = JSON.parse(decodeURIComponent(userStr));
-        if (userObj?.id) {
-          localStorage.setItem('tg_user_id', userObj.id);
-          return userObj.id;
+    const userId = getReliableUserId();
+
+    if (tg?.initDataUnsafe?.user?.first_name) {
+      document.getElementById('userName').childNodes[0].nodeValue = `کارهای ${tg.initDataUnsafe.user.first_name} `;
+    }
+
+    function showXPToast(text) {
+      const toast = document.getElementById('xpToast');
+      document.getElementById('xpToastText').innerText = text;
+      toast.classList.add('show');
+      tg?.HapticFeedback?.notificationOccurred('success');
+      setTimeout(() => toast.classList.remove('show'), 3000);
+    }
+
+    async function fetchStats() {
+      if (!userId) return;
+      try {
+        const res = await fetch(`${API_BASE}/stats?user_id=${userId}`);
+        const data = await res.json();
+        if (data.profile) {
+          const p = data.profile;
+          document.getElementById('userLevel').innerText = `Lvl ${p.level}`;
+          document.getElementById('userBadge').innerText = p.badge;
+          const currentXpProgress = p.xp % 100;
+          document.getElementById('xpFill').style.width = `${currentXpProgress}%`;
+          document.getElementById('xpText').innerText = `${currentXpProgress} / 100 XP (کل: ${p.xp})`;
         }
-      }
-    } catch (e) {
-      console.error("InitData parsing error:", e);
-    }
-  }
-
-  // ۵. خواندن از حافظه محلی
-  const cached = localStorage.getItem('tg_user_id');
-  if (cached) return cached;
-
-  return null;
-}
-
-const userId = getReliableUserId();
-
-    function toggleTheme() {
-      document.body.classList.toggle('custom-theme');
-      tg?.HapticFeedback?.impactOccurred('light');
+      } catch(e) {}
     }
 
     async function fetchTasks() {
       const container = document.getElementById('tasks-container');
-
       if (!userId) {
-        container.innerHTML = `
-          <div class="loader" style="color:var(--danger);">
-            ⚠️ شناسه کاربر یافت نشد!<br><br>
-            <small style="color:var(--hint-color);">لطفاً وب‌اپ را مستقیماً از داخل ربات تلگرام باز کنید.</small>
-          </div>`;
+        container.innerHTML = `<div class="loader" style="color:var(--danger);">⚠️ شناسه کاربر یافت نشد!</div>`;
         return;
       }
 
       try {
-        const res = await fetch(`${API_BASE}?user_id=${userId}`);
+        const res = await fetch(`${API_BASE}/tasks?user_id=${userId}`);
         const data = await res.json();
-        
-        if (!data.tasks || data.tasks.length === 0) {
-          container.innerHTML = '<div class="loader">🎉 شما هیچ کار فعالی ندارید!</div>';
-          return;
-        }
-
-        renderTasks(data.tasks);
+        allTasks = data.tasks || [];
+        renderTasks();
       } catch (err) {
         container.innerHTML = '<div class="loader" style="color:var(--danger);">⚠️ خطا در ارتباط با سرور</div>';
       }
     }
 
-    function renderTasks(tasks) {
+    function filterTasks(cat, btn) {
+      currentFilter = cat;
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderTasks();
+    }
+
+    function renderTasks() {
       const container = document.getElementById('tasks-container');
+      const filtered = currentFilter === 'All' ? allTasks : allTasks.filter(t => t.category === currentFilter);
+
+      if (filtered.length === 0) {
+        container.innerHTML = '<div class="loader">🎉 هیچ کاری در این بخش یافت نشد!</div>';
+        return;
+      }
+
       const catMap = { "Personal": "شخصی", "Work": "کاری", "Study": "تحصیلی" };
       const priClass = { "High": "high", "Medium": "med", "Low": "low" };
 
       let html = '';
-      tasks.forEach(t => {
+      filtered.forEach(t => {
         const taskJson = encodeURIComponent(JSON.stringify(t));
-        
         html += `
           <div class="task-card" id="task-${t.id}">
             <div class="task-header">
@@ -278,7 +316,7 @@ const userId = getReliableUserId();
             </div>
             
             <div class="card-actions">
-              <button class="btn-icon done" onclick="markDone(${t.id})" title="انجام شد"><i class="fas fa-check-circle"></i></button>
+              <button class="btn-icon done" onclick="markDone(${t.id})" title="انجام شد"><i class="fas fa-check-circle"></i> انجام شد</button>
               <button class="btn-icon" onclick="openModal('edit', '${taskJson}')" title="ویرایش"><i class="fas fa-pen"></i></button>
               <button class="btn-icon del" onclick="deleteTask(${t.id})" title="حذف"><i class="fas fa-trash"></i></button>
             </div>
@@ -289,17 +327,26 @@ const userId = getReliableUserId();
     }
 
     async function markDone(id) {
-      tg?.HapticFeedback?.notificationOccurred('success');
       const el = document.getElementById(`task-${id}`);
-      if (el) el.style.opacity = '0.5';
-      await fetch(`${API_BASE}/${id}/done`, { method: 'POST' });
-      fetchTasks();
+      if (el) el.classList.add('completing');
+      
+      try {
+        const res = await fetch(`${API_BASE}/tasks/${id}/done`, { method: 'POST' });
+        const data = await res.json();
+        
+        if (data.status === 'success') {
+          showXPToast(data.leveled_up ? `🎉 ارتقاء به Level ${data.level}! (+۲۰ XP)` : `+۲۰ امتیاز XP دریافت شد! 🔥`);
+          fetchStats();
+        }
+      } catch(e) {}
+      
+      setTimeout(fetchTasks, 300);
     }
 
     async function deleteTask(id) {
       if (!confirm("آیا از حذف این کار مطمئن هستید؟")) return;
       tg?.HapticFeedback?.impactOccurred('heavy');
-      await fetch(`${API_BASE}/${id}`, { method: 'DELETE' });
+      await fetch(`${API_BASE}/tasks/${id}`, { method: 'DELETE' });
       fetchTasks();
     }
 
@@ -312,8 +359,6 @@ const userId = getReliableUserId();
         document.getElementById('taskId').value = '';
         document.getElementById('tTitle').value = '';
         document.getElementById('tDesc').value = '';
-        document.getElementById('tCat').value = 'Personal';
-        document.getElementById('tPri').value = 'Medium';
       } else if (mode === 'edit') {
         const t = JSON.parse(decodeURIComponent(taskJsonStr));
         document.getElementById('modalTitle').innerText = '✏️ ویرایش کار';
@@ -323,7 +368,6 @@ const userId = getReliableUserId();
         document.getElementById('tCat').value = t.category;
         document.getElementById('tPri').value = t.priority;
       }
-      
       modal.style.display = 'flex';
     }
 
@@ -342,25 +386,20 @@ const userId = getReliableUserId();
       };
 
       if (!payload.title) {
-        if (tg?.showAlert) tg.showAlert("لطفاً عنوان کار را وارد کنید!");
-        else alert("لطفاً عنوان کار را وارد کنید!");
+        alert("لطفاً عنوان کار را وارد کنید!");
         return;
       }
 
-      tg?.HapticFeedback?.notificationOccurred('success');
       closeModal();
-      document.getElementById('tasks-container').innerHTML = '<div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i><br>در حال ذخیره...</div>';
-
+      
       if (id) {
-        // اصلاح متد ویرایش (مطابق با API پایتون)
-        await fetch(API_BASE, {
+        await fetch(`${API_BASE}/tasks`, {
           method: 'PUT',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify({ ...payload, task_id: parseInt(id) })
         });
       } else {
-        // افزودن جدید
-        await fetch(API_BASE, {
+        await fetch(`${API_BASE}/tasks`, {
           method: 'POST',
           headers: {'Content-Type': 'application/json'},
           body: JSON.stringify(payload)
@@ -370,6 +409,8 @@ const userId = getReliableUserId();
       fetchTasks();
     }
 
+    // Startup
+    fetchStats();
     fetchTasks();
   </script>
 </body>
