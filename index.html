@@ -160,53 +160,69 @@
       tg.expand();
     }
 
-    function getReliableUserId() {
-  const urlParams = new URLSearchParams(window.location.search);
+   function getReliableUserId() {
   const tg = window.Telegram?.WebApp;
 
-  // ۱. بررسی از طریق URL query parameter (برای دسکتاپ)
+  // ۱. دریافت مستقیم از SDK تلگرام
+  if (tg?.initDataUnsafe?.user?.id) {
+    const id = tg.initDataUnsafe.user.id;
+    localStorage.setItem('tg_user_id', id);
+    return id;
+  }
+
+  // ۲. دریافت از URL Query Parameter (مانند ?user_id=123)
+  const urlParams = new URLSearchParams(window.location.search);
   let uid = urlParams.get('user_id');
   if (uid) {
     localStorage.setItem('tg_user_id', uid);
     return uid;
   }
 
-  // ۲. بررسی از طریق initDataUnsafe تلگرام
-  if (tg?.initDataUnsafe?.user?.id) {
-    uid = tg.initDataUnsafe.user.id;
-    localStorage.setItem('tg_user_id', uid);
-    return uid;
+  // ۳. استخراج از URL Hash مخصوص تلگرام دسکتاپ (#tgWebAppData=...)
+  try {
+    const hash = window.location.hash.substring(1);
+    if (hash) {
+      const hashParams = new URLSearchParams(hash);
+      const rawData = hashParams.get('tgWebAppData') || hash;
+      const dataParams = new URLSearchParams(rawData);
+      const userStr = dataParams.get('user');
+      if (userStr) {
+        const userObj = JSON.parse(decodeURIComponent(userStr));
+        if (userObj?.id) {
+          localStorage.setItem('tg_user_id', userObj.id);
+          return userObj.id;
+        }
+      }
+    }
+  } catch (e) {
+    console.error("Hash parsing error:", e);
   }
 
-  // ۳. پارس کردن دستی initData خام تلگرام
+  // ۴. پارس کردن initData خام
   if (tg?.initData) {
     try {
       const initParams = new URLSearchParams(tg.initData);
       const userStr = initParams.get('user');
       if (userStr) {
-        const userObj = JSON.parse(userStr);
-        if (userObj.id) {
+        const userObj = JSON.parse(decodeURIComponent(userStr));
+        if (userObj?.id) {
           localStorage.setItem('tg_user_id', userObj.id);
           return userObj.id;
         }
       }
     } catch (e) {
-      console.error("Error parsing initData", e);
+      console.error("InitData parsing error:", e);
     }
   }
 
-  // ۴. خواندن آیدی ذخیره‌شده از نشست‌های قبلی
-  const cachedId = localStorage.getItem('tg_user_id');
-  if (cachedId) return cachedId;
+  // ۵. خواندن از حافظه محلی
+  const cached = localStorage.getItem('tg_user_id');
+  if (cached) return cached;
 
   return null;
 }
 
 const userId = getReliableUserId();
-
-    if (tg?.initDataUnsafe?.user?.first_name) {
-      document.getElementById('greeting').innerText = `کارهای ${tg.initDataUnsafe.user.first_name}`;
-    }
 
     function toggleTheme() {
       document.body.classList.toggle('custom-theme');
