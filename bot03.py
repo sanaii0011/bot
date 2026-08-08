@@ -187,7 +187,7 @@ async def db_update_task(task_id, title, description="", category="Personal", pr
 async def db_get_tasks(user_id):
     async with aiosqlite.connect(DB_PATH) as db:
         db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM tasks WHERE user_id=? AND status='pending' ORDER BY due_date ASC NULLS LAST, id DESC", (user_id,)) as c:
+        async with db.execute("SELECT * FROM tasks WHERE user_id=? AND status IN ('pending','doing') ORDER BY due_date ASC NULLS LAST, id DESC", (user_id,)) as c:
             return [dict(r) for r in await c.fetchall()]
 
 async def db_get_done_tasks(user_id, limit=20):
@@ -1410,6 +1410,66 @@ async def handle_admin_all_data(request):
                      "tasks": await db_get_tasks(u[0]), "notes": await db_get_notes(u[0])})
     return web.json_response({"success": True, "users": data})
 
+# ═══ WEB API EXTRA (برای وب‌اپ حرفه‌ای) ═══
+async def db_get_all_tasks(user_id):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        async with db.execute("SELECT * FROM tasks WHERE user_id=? ORDER BY id DESC LIMIT 200", (user_id,)) as c:
+            return [dict(r) for r in await c.fetchall()]
+
+async def db_get_insights(user_id):
+    async with aiosqlite.connect(DB_PATH) as db:
+        db.row_factory = aiosqlite.Row
+        start = (now_local() - timedelta(days=90)).strftime("%Y-%m-%d")
+        async with db.execute("SELECT date, done_count, xp_gained, pomo_count FROM daily_stats WHERE user_id=? AND date>=? ORDER BY date", (user_id, start)) as c:
+            daily = [dict(r) for r in await c.fetchall()]
+        async with db.execute("SELECT key FROM achievements WHERE user_id=?", (user_id,)) as c:
+            ach = [r["key"] for r in await c.fetchall()]
+        async with db.execute("SELECT * FROM habits WHERE user_id=?", (user_id,)) as c:
+            habits = [dict(r) for r in await c.fetchall()]
+        today = now_local().strftime("%Y-%m-%d")
+        async with db.execute("SELECT done_count, challenge_claimed FROM daily_stats WHERE user_id=? AND date=?", (user_id, today)) as c:
+            ch = await c.fetchone()
+    return {"daily": daily, "achievements": ach, "habits": habits, "streak": await calc_day_streak(user_id),
+            "challenge": {"target": CHALLENGE_TARGET, "progress": ch[0] if ch else 0, "claimed": ch[1] if ch else 0}}
+
+async def handle_get_all_tasks(request):
+    user_id = request.query.get("user_id")
+    if not user_id: return web.json_response({"error": "required"}, status=400)
+    tasks = await db_get_all_tasks(int(user_id))
+    for t in tasks: t["subtasks"] = await db_get_subtasks(t["id"])
+    return web.json_response({"status": "success", "tasks": tasks})
+
+async def handle_insights(request):
+    user_id = request.query.get("user_id")
+    if not user_id: return web.json_response({"error": "required"}, status=400)
+    return web.json_response({"status": "success", **await db_get_insights(int(user_id))})
+
+async def handle_toggle_subtask(request):
+    await db_toggle_subtask(int(request.match_info.get("id")))
+    return web.json_response({"status": "success"})
+
+async def handle_set_status(request):
+    d = await request.json()
+    async with aiosqlite.connect(DB_PATH) as db:
+        await db.execute("UPDATE tasks SET status=? WHERE id=?", (d.get("status", "pending"), int(request.match_info.get("id"))))
+        await db.commit()
+    return web.json_response({"status": "success"})
+
+async def handle_admin_broadcast(request):
+    d = await request.json()
+    if int(d.get("user_id", 0)) != ADMIN_ID:
+        return web.json_response({"success": False}, status=403)
+    users, _ = await db_get_users_list(1, 1000)
+    sent = 0
+    for u in users:
+        try:
+            await _bot.send_message(u[0], "📢 <b>پیام مدیر:</b>\n" + d.get("text", ""), parse_mode="HTML")
+            sent += 1
+        except Exception:
+            pass
+    return web.json_response({"success": True, "sent": sent})
+
 async def start_web_server():
     app = web.Application()
     cors = aiohttp_cors.setup(app, defaults={"*": aiohttp_cors.ResourceOptions(allow_credentials=True, expose_headers="*", allow_headers="*", allow_methods="*")})
@@ -1424,6 +1484,11 @@ async def start_web_server():
     cors.add(app.router.add_get("/api/notes", handle_get_notes))
     cors.add(app.router.add_post("/api/notes", handle_post_note))
     cors.add(app.router.add_delete("/api/notes/{id}", handle_delete_note))
+    cors.add(app.router.add_get("/api/tasks/all", handle_get_all_tasks))
+    cors.add(app.router.add_get("/api/insights", handle_insights))
+    cors.add(app.router.add_post("/api/subtasks/{id}/toggle", handle_toggle_subtask))
+    cors.add(app.router.add_post("/api/tasks/{id}/status", handle_set_status))
+    cors.add(app.router.add_post("/api/admin/broadcast", handle_admin_broadcast))
     runner = web.AppRunner(app)
     await runner.setup()
     await web.TCPSite(runner, "0.0.0.0", int(os.environ.get("PORT", 8080))).start()
