@@ -13,6 +13,7 @@
 <style>
 *{margin:0;padding:0;box-sizing:border-box;font-family:'Vazirmatn',sans-serif;-webkit-tap-highlight-color:transparent}
 body[data-theme="dark"]{--bg:#0b1220;--card:#141c2f;--card2:#1b2540;--accent:#2f6bff;--text:#eaf0ff;--muted:#8ea0bf;--danger:#ff5470;--ok:#22c55e}
+body[data-theme="light"]{--bg:#f2f5fb;--card:#ffffff;--card2:#e5eaf4;--accent:#2f6bff;--text:#101828;--muted:#5b6b8c;--danger:#e11d48;--ok:#16a34a}
 body[data-theme="cyber"]{--bg:#0d0221;--card:#1a0b33;--card2:#241245;--accent:#ff2fd6;--text:#f5e9ff;--muted:#a78bfa;--danger:#ff4d6d;--ok:#00f5d4}
 body[data-theme="amoled"]{--bg:#000;--card:#0c0c0c;--card2:#161616;--accent:#3b82f6;--text:#fff;--muted:#9ca3af;--danger:#ef4444;--ok:#22c55e}
 body[data-theme="emerald"]{--bg:#04150f;--card:#0a241a;--card2:#0f3324;--accent:#10b981;--text:#e7fff4;--muted:#6ee7b7;--danger:#f87171;--ok:#34d399}
@@ -20,14 +21,17 @@ body[data-theme="gold"]{--bg:#14100a;--card:#241b0e;--card2:#332612;--accent:#d4
 body[data-theme="holo"]{--bg:#0f0c29;--card:#1b1740;--card2:#272158;--accent:#7c3aed;--text:#f3efff;--muted:#a5b4fc;--danger:#fb7185;--ok:#4ade80}
 body{background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:95px;transition:background .4s}
 header{position:sticky;top:0;z-index:10;background:var(--bg);padding:12px 14px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--card2)}
-header h1{font-size:16px;font-weight:800}header span{font-size:10px;color:var(--muted)}
+header h1{font-size:16px;font-weight:800}
+header span{font-size:10px;color:var(--muted)}
 main{padding:12px;max-width:680px;margin:0 auto}
-.tab{display:none}.tab.active{display:block;animation:fade .3s}
+.tab{display:none}
+.tab.active{display:block;animation:fade .3s}
 @keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
 .card{background:var(--card);border:1px solid var(--card2);border-radius:18px;padding:14px;margin-bottom:12px}
 .row{display:flex;gap:10px;align-items:center}
 .icon{width:48px;height:48px;border-radius:14px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:22px;flex:0 0 auto}
-h2{font-size:15px;font-weight:800}p.sub{font-size:11px;color:var(--muted)}
+h2{font-size:15px;font-weight:800}
+.sub{font-size:11px;color:var(--muted)}
 .bar{height:8px;background:var(--card2);border-radius:99px;margin-top:10px;overflow:hidden}
 .bar div{height:100%;background:var(--accent);border-radius:99px;transition:width .6s}
 .xprow{display:flex;justify-content:space-between;font-size:10px;color:var(--muted);margin-top:5px}
@@ -36,22 +40,26 @@ h2{font-size:15px;font-weight:800}p.sub{font-size:11px;color:var(--muted)}
 .chips{display:flex;gap:7px;overflow-x:auto;padding-bottom:8px;margin-bottom:10px}
 .chip{flex:0 0 auto;background:var(--card);border:1px solid var(--card2);color:var(--muted);border-radius:99px;padding:7px 13px;font-size:11px;cursor:pointer}
 .chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
-.task{background:var(--card);border:1px solid var(--card2);border-radius:16px;padding:12px;margin-bottom:9px;transition:transform .2s;position:relative;overflow:hidden}
+.task{background:var(--card);border:1px solid var(--card2);border-radius:16px;padding:12px;margin-bottom:9px;transition:transform .15s;position:relative}
 .task h3{font-size:13px;font-weight:700;margin-bottom:5px}
 .meta{display:flex;flex-wrap:wrap;gap:5px;margin:5px 0}
 .tag{font-size:9px;background:var(--card2);border-radius:99px;padding:3px 9px;color:var(--muted)}
 .desc{font-size:11px;color:var(--muted);margin-bottom:5px}
 .actions{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
 .btn{border:none;border-radius:11px;padding:9px 13px;font-size:11px;cursor:pointer;font-family:inherit}
-.btn.ok{background:var(--ok);color:#fff}.btn.ed{background:var(--card2);color:var(--text)}.btn.del{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.ed{background:var(--card2);color:var(--text)}
+.btn.del{background:transparent;color:var(--danger);border:1px solid var(--danger)}
 .btn.pri{background:var(--accent);color:#fff;width:100%;padding:12px;font-weight:700;font-size:13px;border-radius:13px}
-.empty,.err{text-align:center;color:var(--muted);padding:26px 0;font-size:12px}.err{color:var(--danger)}
+.empty,.err{text-align:center;color:var(--muted);padding:26px 0;font-size:12px}
+.err{color:var(--danger)}
 .skel{height:70px;border-radius:16px;margin-bottom:9px;background:linear-gradient(90deg,var(--card) 25%,var(--card2) 50%,var(--card) 75%);background-size:200% 100%;animation:sh 1.2s infinite}
 @keyframes sh{to{background-position:-200% 0}}
 .fab{position:fixed;bottom:92px;inset-inline-start:16px;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#fff;font-size:25px;border:none;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4)}
 nav{position:fixed;bottom:0;inset-inline:0;background:var(--card);border-top:1px solid var(--card2);display:flex;z-index:10;overflow-x:auto}
 nav button{flex:1;min-width:52px;background:none;border:none;color:var(--muted);padding:8px 2px 10px;font-size:9px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:3px;align-items:center}
-nav button i{font-style:normal;font-size:16px}nav button.on{color:var(--accent)}
+nav button i{font-style:normal;font-size:16px}
+nav button.on{color:var(--accent)}
 .kcols{display:grid;grid-template-columns:1fr 1fr 1fr;gap:8px}
 .kcol{background:var(--card);border:1px solid var(--card2);border-radius:14px;padding:8px;min-height:220px}
 .kcol h4{font-size:10px;margin-bottom:7px;text-align:center}
@@ -75,7 +83,8 @@ nav button i{font-style:normal;font-size:16px}nav button.on{color:var(--accent)}
 .medal.lock{opacity:.45}
 .timer{font-size:52px;font-weight:800;text-align:center;margin:20px 0;font-variant-numeric:tabular-nums}
 .note{background:var(--card);border:1px solid var(--card2);border-radius:13px;padding:11px;margin-bottom:7px;display:flex;justify-content:space-between;gap:7px}
-.note p{font-size:11px;flex:1}.note small{display:block;color:var(--muted);font-size:9px;margin-top:3px}
+.note p{font-size:11px;flex:1}
+.note small{display:block;color:var(--muted);font-size:9px;margin-top:3px}
 .note button{background:none;border:none;color:var(--danger);font-size:15px;cursor:pointer}
 .themes{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .themes button{background:var(--card);border:1px solid var(--card2);color:var(--text);border-radius:13px;padding:12px;font-size:11px;cursor:pointer;font-family:inherit}
@@ -86,11 +95,12 @@ nav button i{font-style:normal;font-size:16px}nav button.on{color:var(--accent)}
 .msheet h3{margin-bottom:12px;font-size:14px}
 .msheet label{font-size:10px;color:var(--muted);display:block;margin:9px 0 4px}
 .msheet input,.msheet textarea,.msheet select{width:100%;background:var(--card2);border:1px solid var(--card2);border-radius:11px;padding:11px;color:var(--text);font-family:inherit;font-size:12px;outline:none}
-.mrow{display:flex;gap:8px;margin-top:14px}.mrow .btn{flex:1;padding:12px}
+.mrow{display:flex;gap:8px;margin-top:14px}
+.mrow .btn{flex:1;padding:12px}
 #forest{position:fixed;inset:0;background:radial-gradient(circle at 50% 20%,#06281c,#010a06);z-index:50;display:none;flex-direction:column;align-items:center;justify-content:center;color:#e7fff4}
 #forest.open{display:flex}
 #forest .t{font-size:70px;font-weight:800}
-#forest .amb{display:flex;gap:8px;margin:16px}
+#forest .amb{display:flex;gap:8px;margin:16px;flex-wrap:wrap;justify-content:center}
 #forest .amb button{background:#0f3324;border:1px solid #10b981;color:#e7fff4;border-radius:99px;padding:9px 14px;font-size:11px;cursor:pointer;font-family:inherit}
 #toast{position:fixed;bottom:95px;inset-inline:0;display:flex;justify-content:center;z-index:60;pointer-events:none}
 #toast div{background:var(--card2);color:var(--text);border-radius:99px;padding:9px 18px;font-size:11px;opacity:0;transition:opacity .3s;pointer-events:auto}
@@ -105,38 +115,68 @@ nav button i{font-style:normal;font-size:16px}nav button.on{color:var(--accent)}
 <body data-theme="dark">
 <header><h1>⚡ Todo-list Pro</h1><span>Ultra Productivity Hub</span></header>
 <main>
-<div class="offbar" id="offbar">📴 حالت آفلاین — آخرین داده‌های ذخیره‌شده نمایش داده می‌شود</div>
+<div class="offbar" id="offbar">📴 حالت آفلاین — آخرین داده‌های ذخیره‌شده</div>
 
 <section id="tab-tasks" class="tab active">
-  <div class="card row"><div class="icon">⚡</div><div style="flex:1"><h2>کارهای من</h2><p class="sub" id="lvlText">🌱 تازه کار (Level 1)</p>
-  <div class="bar"><div id="xpBar" style="width:0%"></div></div><div class="xprow"><span>پیشرفت سطح</span><span id="xpText">۰ / ۱۰۰ XP</span><span id="streakTxt"></span></div></div></div>
-  <div class="card" id="chCard" style="display:none"><p class="sub">🎯 چالش روزانه: <b id="chTxt"></b></p><div class="bar"><div id="chBar" style="width:0%;background:var(--ok)"></div></div></div>
+  <div class="card row">
+    <div class="icon">⚡</div>
+    <div style="flex:1">
+      <h2>کارهای من</h2>
+      <p class="sub" id="lvlText">🌱 تازه کار (Level 1)</p>
+      <div class="bar"><div id="xpBar" style="width:0%"></div></div>
+      <div class="xprow"><span>پیشرفت سطح</span><span id="xpText">۰ / ۱۰۰ XP</span><span id="streakTxt"></span></div>
+    </div>
+  </div>
+  <div class="card" id="chCard" style="display:none">
+    <p class="sub">🎯 چالش روزانه: <b id="chTxt"></b></p>
+    <div class="bar"><div id="chBar" style="width:0%;background:var(--ok)"></div></div>
+  </div>
   <div class="quote" id="quote"></div>
-  <div class="row" style="margin-bottom:10px"><input class="search" style="margin:0" id="quickInput" placeholder="⚡ ثبت سریع: کار #کاری !ضروری @19:30"><button class="btn ok" id="quickBtn">ثبت</button></div>
-  <div class="p.sub" id="qaPrev" style="font-size:10px;color:var(--muted);margin-bottom:8px"></div>
+  <div class="row" style="margin-bottom:8px">
+    <input class="search" style="margin:0" id="quickInput" placeholder="⚡ ثبت سریع: کار #کاری !ضروری @19:30">
+    <button class="btn ok" id="quickBtn">ثبت</button>
+  </div>
+  <p class="sub" id="qaPrev" style="margin-bottom:8px"></p>
   <input class="search" id="searchBox" placeholder=" جستجوی هوشمند...">
-  <div class="chips" id="chips"><button class="chip on" data-cat="all">🌐 همه</button><button class="chip" data-cat="Personal">👤 شخصی</button><button class="chip" data-cat="Work">💼 کاری</button><button class="chip" data-cat="Study">📚 تحصیلی</button></div>
+  <div class="chips" id="chips">
+    <button class="chip on" data-cat="all">🌐 همه</button>
+    <button class="chip" data-cat="Personal">👤 شخصی</button>
+    <button class="chip" data-cat="Work">💼 کاری</button>
+    <button class="chip" data-cat="Study">📚 تحصیلی</button>
+  </div>
   <div id="tasksList"></div>
 </section>
 
 <section id="tab-board" class="tab">
-  <div class="chips"><button class="chip on" id="vKanban">📋 کانبان</button><button class="chip" id="vMatrix">📐 ماتریس (قابل درگ)</button></div>
-  <div id="boardView"><div class="kcols">
-    <div class="kcol" data-col="pending"><h4>⏳ در انتظار</h4><div class="kbody"></div></div>
-    <div class="kcol" data-col="doing"><h4>▶️ در حال انجام</h4><div class="kbody"></div></div>
-    <div class="kcol" data-col="done"><h4>✅ انجام شد</h4><div class="kbody"></div></div>
-  </div></div>
-  <div id="matrixView" style="display:none"><div class="qgrid">
-    <div class="q" data-q="1:1"><h4>🔥 فوری و مهم</h4><div class="qbody"></div></div>
-    <div class="q" data-q="0:1"><h4>📅 مهم / غیرفوری</h4><div class="qbody"></div></div>
-    <div class="q" data-q="1:0"><h4>⚡ فوری / کم‌اهمیت</h4><div class="qbody"></div></div>
-    <div class="q" data-q="0:0"><h4>🟢 غیرفوری و کم‌اهمیت</h4><div class="qbody"></div></div>
-  </div></div>
+  <div class="chips">
+    <button class="chip on" id="vKanban">📋 کانبان</button>
+    <button class="chip" id="vMatrix">📐 ماتریس (قابل درگ)</button>
+  </div>
+  <div id="boardView">
+    <div class="kcols">
+      <div class="kcol" data-col="pending"><h4>⏳ در انتظار</h4><div class="kbody"></div></div>
+      <div class="kcol" data-col="doing"><h4>▶️ در حال انجام</h4><div class="kbody"></div></div>
+      <div class="kcol" data-col="done"><h4>✅ امروز</h4><div class="kbody"></div></div>
+    </div>
+  </div>
+  <div id="matrixView" style="display:none">
+    <div class="qgrid">
+      <div class="q" data-q="1:1"><h4>🔥 فوری و مهم</h4><div class="qbody"></div></div>
+      <div class="q" data-q="0:1"><h4>📅 مهم / غیرفوری</h4><div class="qbody"></div></div>
+      <div class="q" data-q="1:0"><h4>⚡ فوری / کم‌اهمیت</h4><div class="qbody"></div></div>
+      <div class="q" data-q="0:0"><h4>🟢 غیرفوری و کم‌اهمیت</h4><div class="qbody"></div></div>
+    </div>
+  </div>
 </section>
 
 <section id="tab-cal" class="tab">
-  <div class="card row" style="justify-content:space-between"><button class="btn ed" id="calPrev">◀️</button><h2 id="calTitle"></h2><button class="btn ed" id="calNext">▶️</button></div>
-  <div class="cal" id="calWd"></div><div class="cal" id="calGrid" style="margin-top:4px"></div>
+  <div class="card row" style="justify-content:space-between">
+    <button class="btn ed" id="calPrev">◀️</button>
+    <h2 id="calTitle"></h2>
+    <button class="btn ed" id="calNext">▶️</button>
+  </div>
+  <div class="cal" id="calWd"></div>
+  <div class="cal" id="calGrid" style="margin-top:4px"></div>
   <div id="dayList" style="margin-top:10px"></div>
 </section>
 
@@ -150,39 +190,64 @@ nav button i{font-style:normal;font-size:16px}nav button.on{color:var(--accent)}
 </section>
 
 <section id="tab-focus" class="tab">
-  <div class="card"><h2 style="text-align:center">🍅 پومودورو تمرکز عمیق</h2><p class="sub" style="text-align:center">۲۵ دقیقه تمرکز خالص</p>
-  <div class="timer" id="timer">25:00</div>
-  <div class="mrow"><button class="btn ok" id="pomoStart">شروع تمرکز</button><button class="btn ed" id="pomoReset">ریست</button></div>
-  <button class="btn pri" id="forestBtn" style="margin-top:10px">🌲 حالت جنگل (تمام‌صفحه + صدای محیط)</button></div>
+  <div class="card">
+    <h2 style="text-align:center">🍅 پومودورو تمرکز عمیق</h2>
+    <p class="sub" style="text-align:center">۲۵ دقیقه تمرکز خالص</p>
+    <div class="timer" id="timer">25:00</div>
+    <div class="mrow">
+      <button class="btn ok" id="pomoStart">شروع تمرکز</button>
+      <button class="btn ed" id="pomoReset">ریست</button>
+    </div>
+    <button class="btn pri" id="forestBtn" style="margin-top:10px">🌲 حالت جنگل (تمام‌صفحه + صدای محیط)</button>
+  </div>
 </section>
 
 <section id="tab-notes" class="tab">
   <div class="card"><h2>📝 دفترچه یادداشت سریع</h2></div>
-  <div class="row" style="margin-bottom:12px"><input class="search" style="margin:0" id="noteInput" placeholder="یادداشت جدید..."><button class="btn ok" id="noteAdd">ثبت</button></div>
+  <div class="row" style="margin-bottom:12px">
+    <input class="search" style="margin:0" id="noteInput" placeholder="یادداشت جدید...">
+    <button class="btn ok" id="noteAdd">ثبت</button>
+  </div>
   <div id="notesList"></div>
 </section>
 
 <section id="tab-admin" class="tab">
-  <div class="card"><h2>🛡️ پنل مدیریت جامع</h2><p class="sub">نظارت بر کاربران + ارسال پیام همگانی</p>
-  <button class="btn pri" id="adminBtn" style="margin-top:10px">🔄 بروزرسانی اطلاعات</button></div>
+  <div class="card">
+    <h2>🛡️ پنل مدیریت جامع</h2>
+    <p class="sub">نظارت بر کاربران + ارسال پیام همگانی</p>
+    <button class="btn pri" id="adminBtn" style="margin-top:10px">🔄 بروزرسانی اطلاعات</button>
+  </div>
   <div class="card" id="adminStats" style="display:none"></div>
   <div class="card" id="adminChart" style="display:none"><p class="sub">📈 کارهای هر کاربر</p><div class="bars" id="aBars"></div></div>
-  <div class="card"><label style="font-size:10px;color:var(--muted)">📢 پیام همگانی به همه کاربران:</label><textarea id="bcText" rows="2" style="width:100%;background:var(--card2);border-radius:11px;padding:10px;color:var(--text);font-family:inherit;font-size:12px;margin:6px 0"></textarea><button class="btn ok" id="bcBtn">ارسال همگانی</button></div>
+  <div class="card">
+    <label class="sub">📢 پیام همگانی به همه کاربران:</label>
+    <textarea id="bcText" rows="2" style="width:100%;background:var(--card2);border-radius:11px;padding:10px;color:var(--text);font-family:inherit;font-size:12px;margin:6px 0"></textarea>
+    <button class="btn ok" id="bcBtn">ارسال همگانی</button>
+  </div>
   <div id="adminList"></div>
 </section>
 
 <section id="tab-settings" class="tab">
   <div class="card"><h2>⚙️ شخصی‌سازی و پوسته</h2><p class="sub">تم متحرک وب‌اپ</p></div>
-  <div class="themes" id="themes"><button data-th="dark">🌌 پیش‌فرض دارک</button><button data-th="cyber">⚡ سایبرپانک</button><button data-th="amoled">🖤 مشکی AMOLED</button><button data-th="emerald">🌲 غار زمردی</button><button data-th="gold">👑 طلایی سلطنتی</button><button data-th="holo">💎 هولوگرافیک</button></div>
-  <div class="card" style="margin-top:10px"><button class="btn pri" id="installBtn" style="display:none">📱 نصب اپ روی گوشی</button>
-  <p class="sub" style="margin-top:8px">🌓 هماهنگی با تم تلگرام: <b id="tgTheme">خاموش</b> — <button class="btn ed" id="tgToggle">تغییر</button></p></div>
+  <div class="themes" id="themes">
+    <button data-th="dark">🌌 پیش‌فرض دارک</button>
+    <button data-th="cyber">⚡ سایبرپانک</button>
+    <button data-th="amoled">🖤 مشکی AMOLED</button>
+    <button data-th="emerald">🌲 غار زمردی</button>
+    <button data-th="gold">👑 طلایی سلطنتی</button>
+    <button data-th="holo">💎 هولوگرافیک</button>
+  </div>
+  <div class="card" style="margin-top:10px">
+    <button class="btn pri" id="installBtn" style="display:none">📱 نصب اپ روی گوشی</button>
+    <p class="sub" style="margin-top:8px">🌓 هماهنگی با تم تلگرام: <b id="tgTheme">خاموش</b> — <button class="btn ed" id="tgToggle">تغییر</button></p>
+  </div>
 </section>
 </main>
 
 <button class="fab" id="fab">＋</button>
 <nav id="nav">
   <button data-tab="tasks" class="on"><i>📋</i>وظایف</button>
-  <button data-tab="board"><i>📋</i>بورد</button>
+  <button data-tab="board"><i>🗂</i>بورد</button>
   <button data-tab="cal"><i>📆</i>تقویم</button>
   <button data-tab="insights"><i>📊</i>بینش</button>
   <button data-tab="focus"><i>⏱</i>تمرکز</button>
@@ -194,41 +259,130 @@ nav button i{font-style:normal;font-size:16px}nav button.on{color:var(--accent)}
 <div class="modal" id="modal"><div class="msheet">
   <h3 id="modalTitle">➕ افزودن کار جدید</h3>
   <div class="chips" id="tplChips"></div>
-  <label>عنوان کار *</label><div class="row"><input id="fTitle" style="flex:1"><button class="btn ed" id="micBtn">🎤</button></div>
+  <label>عنوان کار *</label>
+  <div class="row"><input id="fTitle" style="flex:1"><button class="btn ed" id="micBtn">🎤</button></div>
   <label>توضیحات</label><textarea id="fDesc" rows="2"></textarea>
-  <div class="row"><div style="flex:1"><label>دسته‌بندی</label><select id="fCat"><option value="Personal">👤 شخصی</option><option value="Work">💼 کاری</option><option value="Study">📚 تحصیلی</option></select></div>
-  <div style="flex:1"><label>اولویت</label><select id="fPri"><option value="High">🚨 ضروری</option><option value="Medium" selected>🟡 معمولی</option><option value="Low">🟢 کم</option></select></div></div>
-  <label>⏰ یادآوری (تقویم شمسی): <b id="dueLbl">بدون یادآوری</b></label>
-  <div class="card" style="padding:10px"><div class="row" style="justify-content:space-between"><button class="btn ed" id="pkPrev">◀️</button><span id="pkTitle" style="font-size:11px"></span><button class="btn ed" id="pkNext">▶️</button></div>
-  <div class="cal" id="pkGrid" style="margin-top:6px"></div>
-  <div class="row" style="margin-top:8px"><input type="time" id="pkTime" value="19:30" style="flex:1"><button class="btn del" id="pkClear">حذف یادآوری</button></div></div>
-  <div class="mrow"><button class="btn del" id="mCancel">انصراف</button><button class="btn ok" id="mSave">💾 ذخیره</button></div>
+  <div class="row">
+    <div style="flex:1"><label>دسته‌بندی</label><select id="fCat"><option value="Personal">👤 شخصی</option><option value="Work">💼 کاری</option><option value="Study">📚 تحصیلی</option></select></div>
+    <div style="flex:1"><label>اولویت</label><select id="fPri"><option value="High">🚨 ضروری</option><option value="Medium" selected>🟡 معمولی</option><option value="Low">🟢 کم</option></select></div>
+  </div>
+  <label>⏰ یادآوری شمسی: <b id="dueLbl">بدون یادآوری</b></label>
+  <div class="card" style="padding:10px">
+    <div class="row" style="justify-content:space-between">
+      <button class="btn ed" id="pkPrev">◀️</button>
+      <span id="pkTitle" style="font-size:11px"></span>
+      <button class="btn ed" id="pkNext">▶️</button>
+    </div>
+    <div class="cal" id="pkGrid" style="margin-top:6px"></div>
+    <div class="row" style="margin-top:8px">
+      <input type="time" id="pkTime" value="19:30" style="flex:1">
+      <button class="btn del" id="pkClear">حذف یادآوری</button>
+    </div>
+  </div>
+  <div class="mrow">
+    <button class="btn del" id="mCancel">انصراف</button>
+    <button class="btn ok" id="mSave">💾 ذخیره</button>
+  </div>
 </div></div>
 
 <div class="modal" id="detail"><div class="msheet" id="detailBody"></div></div>
 <div id="lvlModal"><div class="box"><div style="font-size:50px">🎉</div><h2 id="lvlTxt" style="margin:10px 0"></h2><button class="btn ok" id="lvlClose">ادامه</button></div></div>
-<div id="forest"><div style="font-size:40px">🌲</div><div class="t" id="fTimer">25:00</div><p class="sub" style="color:#6ee7b7">در حال رشد دادن درخت تمرکزت...</p>
-<div class="amb"><button data-a="rain">🌧 باران</button><button data-a="cafe">☕ کافه</button><button data-a="white">⬜ نویز سفید</button><button data-a="stop">🔇 سکوت</button></div>
-<button class="btn del" id="forestClose">خروج از جنگل</button></div>
+<div id="forest">
+  <div style="font-size:40px">🌲</div>
+  <div class="t" id="fTimer">25:00</div>
+  <p class="sub" style="color:#6ee7b7">در حال رشد دادن درخت تمرکزت...</p>
+  <div class="amb">
+    <button data-a="rain">🌧 باران</button>
+    <button data-a="cafe">☕ کافه</button>
+    <button data-a="white">⬜ نویز سفید</button>
+    <button data-a="stop">🔇 سکوت</button>
+  </div>
+  <button class="btn del" id="forestClose">خروج از جنگل</button>
+</div>
 <div id="toast"><div id="toastBox"><span id="toastMsg"></span><button id="undoBtn" style="display:none">↩️ بازگشت</button></div></div>
 
 <script>
-const API = window.location.origin + "/api", ADMIN_ID = 7681488759, $ = id => document.getElementById(id);
-let USER_ID = new URLSearchParams(location.search).get("user_id");
-if (!USER_ID && window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) USER_ID = Telegram.WebApp.initDataUnsafe.user.id;
-if (window.Telegram && Telegram.WebApp) { try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch(e){} }
-let TASKS=[], ALL=[], INS=null, FILTER="all", SEARCH="", EDIT_ID=null, PICK=null, PK={y:1404,m:1}, deferredInstall=null, lastAction=null;
-
-/* ── ابزارها ── */
-const faNum = s => String(s).replace(/\d/g, d => '۰۱۲۳۴۵۶۷۸۹'[d]);
-const faToEn = s => s.replace(/[۰-۹٠-٩]/g, c => '۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩'.indexOf(c) % 10);
-function toast(msg, undo){ $("toastMsg").textContent = msg; $("undoBtn").style.display = undo ? "inline-block" : "none"; $("toastBox").style.opacity = 1; clearTimeout(toast.t); toast.t = setTimeout(()=>$("toastBox").style.opacity=0, undo?5000:2200); }
-function haptic(type){ try{ Telegram.WebApp.HapticFeedback.notificationOccurred(type||'success'); }catch(e){} }
-function confetti(){ if(window.confetti) confetti({particleCount:120, spread:75, origin:{y:.7}}); }
-async function api(path, opts={}, tries=2){
-  for(let i=0;i<=tries;i++){ try{
-    const o = Object.assign({headers:{"Content-Type":"application/json"}}, opts);
-    const r = await fetch(API+path, o); if(!r.ok) throw 0; return await r.json();
-  }catch(e){ if(i===tries) throw e; await new Promise(r=>setTimeout(r,800*(i+1))); } }
+/* ══ تنظیمات پایه ══ */
+var API = window.location.origin + "/api";
+var ADMIN_ID = 7681488759;
+function $(id){ return document.getElementById(id); }
+var USER_ID = new URLSearchParams(location.search).get("user_id");
+if (!USER_ID && window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+  USER_ID = Telegram.WebApp.initDataUnsafe.user.id;
 }
-/* ── تقویم جلال
+if (window.Telegram && Telegram.WebApp) { try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch(e){} }
+var TASKS = [], ALL = [], INS = null, FILTER = "all", SEARCH = "";
+var EDIT_ID = null, EDIT_TASK = null, PKD = null, PK = {y:1404, m:1};
+var lastAction = null, deferredInstall = null, tgSync = false;
+
+/* ══ ابزارها ══ */
+function faNum(s){ return String(s).replace(/\d/g, function(d){ return '۰۱۲۳۴۵۶۷۸۹'[d]; }); }
+function faToEn(s){ return s.replace(/[۰-۹٠-٩]/g, function(c){ return String('۰۱۲۳۴۵۶۷۸۹٠١٢٣٤٥٦٧٨٩'.indexOf(c) % 10); }); }
+function toast(msg, undo){
+  $("toastMsg").textContent = msg;
+  $("undoBtn").style.display = undo ? "inline-block" : "none";
+  $("toastBox").style.opacity = 1;
+  clearTimeout(toast.t);
+  toast.t = setTimeout(function(){ $("toastBox").style.opacity = 0; }, undo ? 5000 : 2200);
+}
+function haptic(t){ try { Telegram.WebApp.HapticFeedback.notificationOccurred(t || 'success'); } catch(e){} }
+function confettiBurst(){ if (window.confetti) confetti({particleCount:120, spread:75, origin:{y:.7}}); }
+async function api(path, opts, tries){
+  tries = tries || 2;
+  for (var i = 0; i <= tries; i++) {
+    try {
+      var o = Object.assign({headers:{"Content-Type":"application/json"}}, opts || {});
+      var r = await fetch(API + path, o);
+      if (!r.ok) throw new Error("HTTP " + r.status);
+      return await r.json();
+    } catch(e) {
+      if (i === tries) throw e;
+      await new Promise(function(res){ setTimeout(res, 800 * (i + 1)); });
+    }
+  }
+}
+
+/* ══ تقویم جلالی ══ */
+function div(a,b){ return ~~(a/b); }
+function mod(a,b){ return a - ~~(a/b)*b; }
+var BR = [-61,9,38,199,426,686,756,818,1111,1181,1210,1635,2060,2097,2192,2262,2324,2394,2456,3178];
+function jalCal(jy){
+  var bl=BR.length, gy=jy+621, leapJ=-14, jp=BR[0], jm, jump, leap, leapG, march, n, i;
+  for (i=1;i<bl;i+=1){ jm=BR[i]; jump=jm-jp; if (jy<jm) break; leapJ=leapJ+div(jump,33)*8+div(mod(jump,33),4); jp=jm; }
+  n=jy-jp; leapJ=leapJ+div(n,33)*8+div(mod(n,33)+3,4);
+  if (mod(jump,33)===4 && jump-n===4) leapJ+=1;
+  leapG=div(gy,4)-div((div(gy,100)+1)*3,4)-150; march=20+leapJ-leapG;
+  if (jump-n<6) n=n-jump+div(jump+4,33)*33;
+  leap=mod(mod(n+1,33)-1,4); if (leap===-1) leap=4;
+  return {leap:leap, gy:gy, march:march};
+}
+function g2d(gy,gm,gd){
+  var d=div((gy+div(gm-8,6)+100100)*1461,4)+div(153*mod(gm+9,12)+2,5)+gd-34840408;
+  d=d-div(div(gy+100100+div(gm-8,6),100)*3,4)+752;
+  return d;
+}
+function d2g(j){
+  var i=4*j+139361631;
+  i=i+div(div(4*j+183187720,146097)*3,4)*4-3908;
+  var k=div(mod(i,1461),4)*5+308;
+  return {gy:div(i,1461)-100100+div(8-(mod(div(k,153),12)+1),6), gm:mod(div(k,153),12)+1, gd:div(mod(k,153),5)+1};
+}
+function j2d(jy,jm,jd){ var r=jalCal(jy); return g2d(r.gy,3,r.march)+(jm-1)*31-div(jm,7)*(jm-7)+jd-1; }
+function d2j(j){
+  var gy=d2g(j).gy, jy=gy-621, r=jalCal(jy), k=j-g2d(gy,3,r.march);
+  if (k>=0){ if (k<=185) return {jy:jy, jm:1+div(k,31), jd:mod(k,31)+1}; k-=186; }
+  else { jy-=1; k+=179; }
+  return {jy:jy, jm:7+div(k,30), jd:mod(k,30)+1};
+}
+function g2j(gy,gm,gd){ return d2j(g2d(gy,gm,gd)); }
+function j2g(jy,jm,jd){ return d2g(j2d(jy,jm,jd)); }
+function jLen(jy,jm){ if (jm<=6) return 31; if (jm<=11) return 30; return jalCal(jy).leap===0?30:29; }
+var JM = ["فروردین","اردیبهشت","خرداد","تیر","مرداد","شهریور","مهر","آبان","آذر","دی","بهمن","اسفند"];
+function pad2(n){ return String(n).padStart(2,"0"); }
+function keyOf(g){ return g.gy+"-"+pad2(g.gm)+"-"+pad2(g.gd); }
+
+/* ══ جمله انگیزشی روز ══ */
+var QUOTES = [
+  "«قدم‌های کوچک هر روز، قله‌های بزرگ فردا را می‌سازند.»",
+  "«نظم یعنی انتخاب بین آنچه می‌خواهی و آنچه بیشتر می‌خواهی.»",
+  "
