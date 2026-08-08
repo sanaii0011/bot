@@ -1,853 +1,358 @@
 <!DOCTYPE html>
 <html lang="fa" dir="rtl">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>Ultra Productivity Hub</title>
-  
-  <!-- Telegram WebApp SDK -->
-  <script src="https://telegram.org/js/telegram-web-app.js"></script>
-  <!-- FontAwesome 6 Pro/Free -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
-  <!-- Google Vazirmatn Font -->
-  <link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;500;700;900&display=swap" rel="stylesheet">
-  <!-- Canvas Confetti -->
-  <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
-
-  <style>
-    /* ==========================================================================
-       DYNAMIC THEME ENGINE & SYSTEM VARIABLES
-       ========================================================================== */
-    :root {
-      --font-family: 'Vazirmatn', system-ui, -apple-system, sans-serif;
-      --primary: #8b5cf6;
-      --primary-glow: rgba(139, 92, 246, 0.4);
-      --primary-gradient: linear-gradient(135deg, #a855f7, #6366f1);
-      --bg: #090d16;
-      --card-bg: rgba(22, 30, 46, 0.65);
-      --card-border: rgba(255, 255, 255, 0.08);
-      --text: #f8fafc;
-      --text-sub: #94a3b8;
-      --danger: #f43f5e;
-      --success: #10b981;
-      --warning: #f59e0b;
-      --radius: 20px;
-    }
-
-    /* THEME PRESETS */
-    body.theme-cyberpunk {
-      --primary: #ec4899;
-      --primary-glow: rgba(236, 72, 153, 0.5);
-      --primary-gradient: linear-gradient(135deg, #ec4899, #8b5cf6);
-      --bg: #030014;
-      --card-bg: rgba(15, 7, 32, 0.75);
-      --card-border: rgba(236, 72, 153, 0.25);
-    }
-
-    body.theme-amoled {
-      --primary: #3b82f6;
-      --primary-glow: rgba(59, 130, 246, 0.3);
-      --primary-gradient: linear-gradient(135deg, #2563eb, #1d4ed8);
-      --bg: #000000;
-      --card-bg: #111111;
-      --card-border: #222222;
-    }
-
-    body.theme-emerald {
-      --primary: #10b981;
-      --primary-glow: rgba(16, 185, 129, 0.4);
-      --primary-gradient: linear-gradient(135deg, #10b981, #059669);
-      --bg: #022c22;
-      --card-bg: rgba(6, 78, 59, 0.5);
-      --card-border: rgba(52, 211, 153, 0.2);
-    }
-
-    body.theme-gold {
-      --primary: #f59e0b;
-      --primary-glow: rgba(245, 158, 11, 0.4);
-      --primary-gradient: linear-gradient(135deg, #fbbf24, #d97706);
-      --bg: #1c1002;
-      --card-bg: rgba(69, 39, 4, 0.6);
-      --card-border: rgba(245, 158, 11, 0.2);
-    }
-
-    body.theme-hologram {
-      --primary: #06b6d4;
-      --primary-glow: rgba(6, 182, 212, 0.5);
-      --primary-gradient: linear-gradient(135deg, #06b6d4, #3b82f6);
-      --bg: #0f172a;
-      --card-bg: rgba(30, 41, 59, 0.5);
-      --card-border: rgba(56, 189, 248, 0.25);
-    }
-
-    /* GLOBAL RESET & BASE */
-    * { box-sizing: border-box; margin: 0; padding: 0; user-select: none; -webkit-tap-highlight-color: transparent; }
-    
-    body {
-      font-family: var(--font-family);
-      background-color: var(--bg);
-      color: var(--text);
-      min-height: 100vh;
-      padding: 16px;
-      padding-bottom: 100px;
-      direction: rtl;
-      overflow-x: hidden;
-      transition: background-color 0.4s ease, color 0.4s ease;
-    }
-
-    /* AMBIENT GLOW BLOBS (BACKGROUND EFFECT) */
-    .ambient-blob {
-      position: fixed;
-      width: 250px;
-      height: 250px;
-      border-radius: 50%;
-      background: var(--primary-glow);
-      filter: blur(80px);
-      z-index: -1;
-      pointer-events: none;
-      animation: blobFloat 10s infinite alternate ease-in-out;
-    }
-    .blob-1 { top: -50px; right: -50px; }
-    .blob-2 { bottom: 100px; left: -50px; animation-delay: -5s; }
-
-    @keyframes blobFloat {
-      0% { transform: translate(0, 0) scale(1); }
-      100% { transform: translate(30px, 50px) scale(1.2); }
-    }
-
-    /* GLASS PANEL UI */
-    .glass {
-      background: var(--card-bg);
-      border: 1px solid var(--card-border);
-      backdrop-filter: blur(20px);
-      -webkit-backdrop-filter: blur(20px);
-      border-radius: var(--radius);
-      box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
-    }
-
-    /* APP HEADER CARD */
-    .header-panel {
-      padding: 18px;
-      margin-bottom: 20px;
-      position: relative;
-      overflow: hidden;
-    }
-    .header-top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px; }
-    .profile-info { display: flex; align-items: center; gap: 12px; }
-    .avatar-ring {
-      width: 52px; height: 52px; border-radius: 16px;
-      background: var(--primary-gradient); display: flex; justify-content: center; align-items: center;
-      font-size: 22px; color: #fff; box-shadow: 0 0 20px var(--primary-glow);
-    }
-    .profile-meta h2 { font-size: 1.15em; font-weight: 800; }
-    .profile-meta span { font-size: 0.78em; color: var(--text-sub); }
-
-    .xp-bar-wrapper { margin-top: 10px; }
-    .xp-track { background: rgba(0, 0, 0, 0.4); height: 8px; border-radius: 10px; overflow: hidden; }
-    .xp-fill { background: var(--primary-gradient); height: 100%; width: 0%; transition: width 0.8s cubic-bezier(0.34, 1.56, 0.64, 1); }
-    .xp-info { display: flex; justify-content: space-between; font-size: 0.75em; color: var(--text-sub); margin-top: 6px; font-weight: 600; }
-
-    /* TAB VIEWS MANAGEMENT */
-    .tab-content { display: none; }
-    .tab-content.active { display: block; animation: fadeIn 0.3s ease-in-out; }
-    @keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
-
-    /* SEARCH & FILTER BAR */
-    .search-filter-wrapper { display: flex; flex-direction: column; gap: 12px; margin-bottom: 20px; }
-    .search-input-box { position: relative; }
-    .search-input-box input {
-      width: 100%; padding: 12px 42px 12px 16px; border-radius: 14px;
-      border: 1px solid var(--card-border); background: rgba(0, 0, 0, 0.25);
-      color: var(--text); font-family: inherit; outline: none; font-size: 0.9em;
-    }
-    .search-input-box i { position: absolute; right: 14px; top: 50%; transform: translateY(-50%); color: var(--text-sub); }
-
-    .filter-pills { display: flex; gap: 8px; overflow-x: auto; padding-bottom: 4px; scrollbar-width: none; }
-    .filter-pills::-webkit-scrollbar { display: none; }
-    .pill-btn {
-      background: rgba(255, 255, 255, 0.05); border: 1px solid var(--card-border);
-      color: var(--text-sub); padding: 8px 16px; border-radius: 20px; font-size: 0.8em;
-      white-space: nowrap; cursor: pointer; transition: 0.2s; font-weight: 600; font-family: inherit;
-    }
-    .pill-btn.active { background: var(--primary-gradient); color: #fff; border-color: transparent; box-shadow: 0 4px 15px var(--primary-glow); }
-
-    /* TASK CARDS */
-    .task-list { display: flex; flex-direction: column; gap: 12px; }
-    .task-card {
-      padding: 16px; position: relative; transition: all 0.25s ease;
-      border: 1px solid var(--card-border);
-    }
-    .task-card:active { transform: scale(0.98); }
-    .task-title { font-weight: 700; font-size: 1em; margin-bottom: 6px; }
-    .task-desc { font-size: 0.82em; color: var(--text-sub); margin-bottom: 12px; line-height: 1.5; }
-
-    .tags-group { display: flex; gap: 6px; flex-wrap: wrap; margin-bottom: 14px; }
-    .badge { padding: 4px 10px; border-radius: 8px; font-size: 0.7em; font-weight: 600; background: rgba(255,255,255,0.06); }
-    .badge.urgent { background: rgba(244, 63, 94, 0.2); color: #fda4af; border: 1px solid rgba(244, 63, 94, 0.3); }
-    .badge.important { background: rgba(245, 158, 11, 0.2); color: #fef08a; border: 1px solid rgba(245, 158, 11, 0.3); }
-
-    .card-footer { display: flex; justify-content: flex-end; gap: 8px; border-top: 1px solid var(--card-border); padding-top: 10px; }
-    .btn-action {
-      background: rgba(255, 255, 255, 0.06); border: none; padding: 8px 14px; border-radius: 10px;
-      color: var(--text); font-size: 0.8em; cursor: pointer; display: flex; align-items: center; gap: 6px;
-      font-family: inherit; font-weight: 600; transition: 0.2s;
-    }
-    .btn-action.complete { background: rgba(16, 185, 129, 0.2); color: #6ee7b7; }
-    .btn-action.delete { background: rgba(244, 63, 94, 0.2); color: #fda4af; }
-
-    /* EISENHOWER MATRIX GRID VIEW */
-    .matrix-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .matrix-box { padding: 14px; min-height: 160px; }
-    .matrix-title { font-size: 0.85em; font-weight: 800; margin-bottom: 10px; display: flex; align-items: center; gap: 6px; }
-
-    /* LIVE POMODORO TIMER WEBAPP VIEW */
-    .pomo-wrapper { text-align: center; padding: 30px 20px; }
-    .timer-circle {
-      width: 200px; height: 200px; border-radius: 50%;
-      background: radial-gradient(circle, rgba(0,0,0,0.4) 0%, rgba(0,0,0,0.8) 100%);
-      border: 4px solid var(--primary); box-shadow: 0 0 30px var(--primary-glow);
-      margin: 20px auto; display: flex; flex-direction: column; justify-content: center; align-items: center;
-    }
-    .timer-display { font-size: 2.8em; font-weight: 900; letter-spacing: 2px; }
-    .pomo-controls { display: flex; justify-content: center; gap: 14px; margin-top: 20px; }
-
-    /* BOTTOM APP NAVIGATION BAR */
-    .bottom-nav {
-      position: fixed; bottom: 0; left: 0; right: 0; height: 75px;
-      background: rgba(10, 15, 26, 0.85); border-top: 1px solid var(--card-border);
-      backdrop-filter: blur(25px); -webkit-backdrop-filter: blur(25px);
-      display: flex; justify-content: space-around; align-items: center; z-index: 900;
-    }
-    .nav-item {
-      display: flex; flex-direction: column; align-items: center; gap: 4px;
-      color: var(--text-sub); font-size: 0.72em; font-weight: 600; cursor: pointer; transition: 0.2s;
-    }
-    .nav-item i { font-size: 18px; }
-    .nav-item.active { color: var(--primary); transform: translateY(-2px); }
-
-    /* FAB ADD TASK BUTTON */
-    .fab {
-      position: fixed; bottom: 90px; left: 20px; width: 58px; height: 58px;
-      background: var(--primary-gradient); color: #fff; border-radius: 50%;
-      display: flex; justify-content: center; align-items: center; font-size: 22px;
-      box-shadow: 0 10px 25px var(--primary-glow); cursor: pointer; border: none; z-index: 800;
-    }
-
-    /* MODAL SHEETS */
-    .modal-backdrop {
-      position: fixed; top: 0; left: 0; right: 0; bottom: 0; background: rgba(0,0,0,0.8);
-      backdrop-filter: blur(8px); display: none; justify-content: center; align-items: flex-end; z-index: 1000;
-    }
-    .modal-sheet {
-      background: var(--bg); border: 1px solid var(--card-border); width: 100%; max-width: 500px;
-      border-radius: 28px 28px 0 0; padding: 24px; box-shadow: 0 -10px 40px rgba(0,0,0,0.6);
-      animation: sheetUp 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-height: 85vh; overflow-y: auto;
-    }
-    @keyframes sheetUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
-
-    .form-group { margin-bottom: 16px; }
-    .form-group label { display: block; margin-bottom: 6px; font-size: 0.82em; color: var(--text-sub); font-weight: 700; }
-    .form-group input, .form-group select, .form-group textarea {
-      width: 100%; padding: 12px 14px; border-radius: 12px; border: 1px solid var(--card-border);
-      background: rgba(0,0,0,0.3); color: var(--text); font-family: inherit; font-size: 0.9em; outline: none;
-    }
-
-    .btn-group { display: flex; gap: 10px; margin-top: 24px; }
-    .btn-main { flex: 1; padding: 14px; border: none; border-radius: 14px; background: var(--primary-gradient); color: #fff; font-weight: 800; cursor: pointer; font-family: inherit; }
-    .btn-secondary { flex: 1; padding: 14px; border: none; border-radius: 14px; background: rgba(255,255,255,0.08); color: var(--text); font-weight: 700; cursor: pointer; font-family: inherit; }
-
-    /* CUSTOMIZATION OPTIONS GRID */
-    .theme-selector { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-top: 10px; }
-    .theme-card-option {
-      padding: 12px; border-radius: 14px; border: 2px solid transparent; background: rgba(255,255,255,0.04);
-      cursor: pointer; text-align: center; font-size: 0.85em; font-weight: 700;
-    }
-    .theme-card-option.selected { border-color: var(--primary); background: rgba(255,255,255,0.1); }
-
-    .loader { text-align: center; color: var(--text-sub); padding: 40px 0; }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>Todo-list | Ultra Productivity Hub</title>
+<script src="https://telegram.org/js/telegram-web-app.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Vazirmatn:wght@300;400;600;800&display=swap" rel="stylesheet">
+<style>
+*{margin:0;padding:0;box-sizing:border-box;font-family:'Vazirmatn',sans-serif;-webkit-tap-highlight-color:transparent}
+body[data-theme="dark"]{--bg:#0b1220;--card:#141c2f;--card2:#1b2540;--accent:#2f6bff;--text:#eaf0ff;--muted:#8ea0bf;--danger:#ff5470;--ok:#22c55e}
+body[data-theme="cyber"]{--bg:#0d0221;--card:#1a0b33;--card2:#241245;--accent:#ff2fd6;--text:#f5e9ff;--muted:#a78bfa;--danger:#ff4d6d;--ok:#00f5d4}
+body[data-theme="amoled"]{--bg:#000;--card:#0c0c0c;--card2:#161616;--accent:#3b82f6;--text:#fff;--muted:#9ca3af;--danger:#ef4444;--ok:#22c55e}
+body[data-theme="emerald"]{--bg:#04150f;--card:#0a241a;--card2:#0f3324;--accent:#10b981;--text:#e7fff4;--muted:#6ee7b7;--danger:#f87171;--ok:#34d399}
+body[data-theme="gold"]{--bg:#14100a;--card:#241b0e;--card2:#332612;--accent:#d4a017;--text:#fff8e7;--muted:#d1b78a;--danger:#ef4444;--ok:#84cc16}
+body[data-theme="holo"]{--bg:#0f0c29;--card:#1b1740;--card2:#272158;--accent:#7c3aed;--text:#f3efff;--muted:#a5b4fc;--danger:#fb7185;--ok:#4ade80}
+body{background:var(--bg);color:var(--text);min-height:100vh;padding-bottom:90px;transition:background .4s}
+header{position:sticky;top:0;z-index:10;background:var(--bg);padding:14px 16px;display:flex;justify-content:space-between;align-items:center;border-bottom:1px solid var(--card2)}
+header h1{font-size:17px;font-weight:800}
+header span{font-size:11px;color:var(--muted)}
+main{padding:14px;max-width:640px;margin:0 auto}
+.tab{display:none}.tab.active{display:block;animation:fade .3s}
+@keyframes fade{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+.card{background:var(--card);border:1px solid var(--card2);border-radius:18px;padding:16px;margin-bottom:14px}
+.profile{display:flex;gap:12px;align-items:center}
+.profile .icon{width:52px;height:52px;border-radius:16px;background:var(--accent);display:flex;align-items:center;justify-content:center;font-size:24px}
+.profile h2{font-size:16px;font-weight:800}
+.profile p{font-size:12px;color:var(--muted)}
+.bar{height:8px;background:var(--card2);border-radius:99px;margin-top:12px;overflow:hidden}
+.bar div{height:100%;background:var(--accent);border-radius:99px;transition:width .6s}
+.xprow{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:6px}
+.search{width:100%;background:var(--card);border:1px solid var(--card2);border-radius:14px;padding:12px 14px;color:var(--text);font-size:13px;margin-bottom:12px;outline:none}
+.chips{display:flex;gap:8px;overflow-x:auto;padding-bottom:8px;margin-bottom:12px}
+.chip{flex:0 0 auto;background:var(--card);border:1px solid var(--card2);color:var(--muted);border-radius:99px;padding:8px 14px;font-size:12px;cursor:pointer}
+.chip.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+.task{background:var(--card);border:1px solid var(--card2);border-radius:16px;padding:14px;margin-bottom:10px}
+.task h3{font-size:14px;font-weight:700;margin-bottom:6px}
+.task .meta{display:flex;flex-wrap:wrap;gap:6px;margin:6px 0}
+.tag{font-size:10px;background:var(--card2);border-radius:99px;padding:4px 10px;color:var(--muted)}
+.task .desc{font-size:12px;color:var(--muted);margin-bottom:6px}
+.task .subs{font-size:12px;color:var(--muted);margin:6px 0}
+.actions{display:flex;gap:8px;margin-top:10px}
+.btn{border:none;border-radius:12px;padding:10px 14px;font-size:12px;cursor:pointer;font-family:inherit}
+.btn.ok{background:var(--ok);color:#fff}
+.btn.ed{background:var(--card2);color:var(--text)}
+.btn.del{background:transparent;color:var(--danger);border:1px solid var(--danger)}
+.btn.pri{background:var(--accent);color:#fff;width:100%;padding:13px;font-weight:700;font-size:14px;border-radius:14px}
+.empty{text-align:center;color:var(--muted);padding:30px 0;font-size:13px}
+.err{text-align:center;color:var(--danger);padding:30px 0;font-size:13px}
+.fab{position:fixed;bottom:86px;inset-inline-start:18px;width:58px;height:58px;border-radius:50%;background:var(--accent);color:#fff;font-size:26px;border:none;z-index:20;box-shadow:0 8px 24px rgba(0,0,0,.4)}
+nav{position:fixed;bottom:0;inset-inline:0;background:var(--card);border-top:1px solid var(--card2);display:flex;z-index:10}
+nav button{flex:1;background:none;border:none;color:var(--muted);padding:10px 2px 12px;font-size:10px;cursor:pointer;font-family:inherit;display:flex;flex-direction:column;gap:4px;align-items:center}
+nav button i{font-style:normal;font-size:18px}
+nav button.on{color:var(--accent)}
+.qgrid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.q{background:var(--card);border:1px solid var(--card2);border-radius:16px;padding:12px;min-height:120px}
+.q h4{font-size:11px;margin-bottom:8px}
+.q li{font-size:11px;color:var(--muted);margin:4px 0;list-style:none}
+.timer{font-size:56px;font-weight:800;text-align:center;margin:24px 0;font-variant-numeric:tabular-nums}
+.trow{display:flex;gap:10px}
+.trow .btn{flex:1;padding:13px;font-size:14px}
+.note{background:var(--card);border:1px solid var(--card2);border-radius:14px;padding:12px;margin-bottom:8px;display:flex;justify-content:space-between;gap:8px;align-items:center}
+.note p{font-size:12px;flex:1}
+.note small{display:block;color:var(--muted);font-size:10px;margin-top:4px}
+.note button{background:none;border:none;color:var(--danger);font-size:16px;cursor:pointer}
+.nrow{display:flex;gap:8px;margin-bottom:14px}
+.nrow input{flex:1;background:var(--card);border:1px solid var(--card2);border-radius:12px;padding:12px;color:var(--text);font-family:inherit;font-size:13px;outline:none}
+.themes{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.themes button{background:var(--card);border:1px solid var(--card2);color:var(--text);border-radius:14px;padding:14px;font-size:12px;cursor:pointer;font-family:inherit}
+.themes button.on{border-color:var(--accent);color:var(--accent)}
+.modal{position:fixed;inset:0;background:rgba(0,0,0,.6);z-index:30;display:none;align-items:flex-end;justify-content:center}
+.modal.open{display:flex}
+.msheet{background:var(--card);border-radius:22px 22px 0 0;padding:20px;width:100%;max-width:640px;max-height:85vh;overflow-y:auto}
+.msheet h3{margin-bottom:14px;font-size:15px}
+.msheet label{font-size:11px;color:var(--muted);display:block;margin:10px 0 4px}
+.msheet input,.msheet textarea,.msheet select{width:100%;background:var(--card2);border:1px solid var(--card2);border-radius:12px;padding:12px;color:var(--text);font-family:inherit;font-size:13px;outline:none}
+.mrow{display:flex;gap:10px;margin-top:16px}
+.mrow .btn{flex:1;padding:13px}
+.adminuser{background:var(--card);border:1px solid var(--card2);border-radius:14px;padding:12px;margin-bottom:8px;font-size:12px}
+.adminuser b{display:block;margin-bottom:4px}
+.adminuser span{color:var(--muted);font-size:11px}
+#toast{position:fixed;bottom:90px;inset-inline:0;display:flex;justify-content:center;z-index:40;pointer-events:none}
+#toast div{background:var(--card2);color:var(--text);border-radius:99px;padding:10px 20px;font-size:12px;opacity:0;transition:opacity .3s}
+</style>
 </head>
-<body>
+<body data-theme="dark">
+<header><h1>⚡ Todo-list</h1><span>Ultra Productivity Hub</span></header>
+<main>
 
-  <!-- AMBIENT BACKGROUND GLOW BLOBS -->
-  <div class="ambient-blob blob-1" id="blob1"></div>
-  <div class="ambient-blob blob-2" id="blob2"></div>
-
-  <!-- APP HEADER PANEL -->
-  <div class="glass header-panel">
-    <div class="header-top">
-      <div class="profile-info">
-        <div class="avatar-ring" id="uAvatar"><i class="fas fa-bolt"></i></div>
-        <div class="profile-meta">
-          <h2 id="uName">کارهای من</h2>
-          <span id="uBadge">🌱 تازه کار (Level 1)</span>
-        </div>
-      </div>
-    </div>
-    <div class="xp-bar-wrapper">
-      <div class="xp-track"><div class="xp-fill" id="xpFill"></div></div>
-      <div class="xp-info">
-        <span>پیشرفت سطح</span>
-        <span id="xpText">0 / 100 XP</span>
-      </div>
+<section id="tab-tasks" class="tab active">
+  <div class="card profile">
+    <div class="icon">⚡</div>
+    <div style="flex:1">
+      <h2>کارهای من</h2>
+      <p id="lvlText">🌱 تازه کار (Level 1)</p>
+      <div class="bar"><div id="xpBar" style="width:0%"></div></div>
+      <div class="xprow"><span>پیشرفت سطح</span><span id="xpText">0 / 100 XP</span></div>
     </div>
   </div>
+  <input class="search" id="searchBox" placeholder=" جستجوی هوشمند...">
+  <div class="chips" id="chips">
+    <button class="chip on" data-cat="all">🌐 همه</button>
+    <button class="chip" data-cat="Personal">👤 شخصی</button>
+    <button class="chip" data-cat="Work">💼 کاری</button>
+    <button class="chip" data-cat="Study">📚 تحصیلی</button>
+  </div>
+  <div id="tasksList"><div class="empty">در حال ارتباط با سرور...</div></div>
+</section>
 
-  <!-- TAB 1: MAIN TASKS VIEW -->
-  <div id="tabTasks" class="tab-content active">
-    <div class="search-filter-wrapper">
-      <div class="search-input-box">
-        <i class="fas fa-search"></i>
-        <input type="text" id="searchInput" placeholder="جستجوی هوشمند..." oninput="onSearchChange()">
-      </div>
-      <div class="filter-pills">
-        <button class="pill-btn active" onclick="setFilter('All', this)">🌐 همه</button>
-        <button class="pill-btn" onclick="setFilter('Personal', this)">👤 شخصی</button>
-        <button class="pill-btn" onclick="setFilter('Work', this)">💼 کاری</button>
-        <button class="pill-btn" onclick="setFilter('Study', this)">📚 تحصیلی</button>
-      </div>
-    </div>
+<section id="tab-matrix" class="tab">
+  <div class="card"><h3 style="font-size:14px">📐 ماتریس آیزنهاور</h3></div>
+  <div class="qgrid">
+    <div class="q"><h4>🔥 فوری و مهم</h4><ul id="q1"></ul></div>
+    <div class="q"><h4>📅 مهم / غیرفوری</h4><ul id="q2"></ul></div>
+    <div class="q"><h4>⚡ فوری / کم‌اهمیت</h4><ul id="q3"></ul></div>
+    <div class="q"><h4>🟢 غیرفوری و کم‌اهمیت</h4><ul id="q4"></ul></div>
+  </div>
+</section>
 
-    <div id="taskListContainer" class="task-list">
-      <div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i><br><br>در حال ارتباط با سرور...</div>
+<section id="tab-pomo" class="tab">
+  <div class="card">
+    <h3 style="font-size:14px;text-align:center">🍅 پومودورو تمرکز عمیق</h3>
+    <p style="font-size:11px;color:var(--muted);text-align:center;margin-top:4px">۲۵ دقیقه تمرکز خالص بدون حواس‌پرتی</p>
+    <div class="timer" id="timer">25:00</div>
+    <div class="trow">
+      <button class="btn ok" id="pomoStart">شروع تمرکز</button>
+      <button class="btn ed" id="pomoReset">ریست</button>
     </div>
   </div>
+</section>
 
-  <!-- TAB 2: EISENHOWER MATRIX VIEW -->
-  <div id="tabMatrix" class="tab-content">
-    <div class="matrix-grid">
-      <div class="glass matrix-box">
-        <div class="matrix-title" style="color: var(--danger);"><i class="fas fa-fire"></i> فوری و مهم</div>
-        <div id="mQ1" class="task-list"></div>
-      </div>
-      <div class="glass matrix-box">
-        <div class="matrix-title" style="color: var(--warning);"><i class="fas fa-calendar"></i> مهم / غیرفوری</div>
-        <div id="mQ2" class="task-list"></div>
-      </div>
-      <div class="glass matrix-box">
-        <div class="matrix-title" style="color: #3b82f6;"><i class="fas fa-bolt"></i> فوری / کم‌اهمیت</div>
-        <div id="mQ3" class="task-list"></div>
-      </div>
-      <div class="glass matrix-box">
-        <div class="matrix-title" style="color: var(--success);"><i class="fas fa-leaf"></i> غیرفوری و کم‌اهمیت</div>
-        <div id="mQ4" class="task-list"></div>
-      </div>
-    </div>
+<section id="tab-notes" class="tab">
+  <div class="card"><h3 style="font-size:14px">📝 دفترچه یادداشت سریع</h3></div>
+  <div class="nrow">
+    <input id="noteInput" placeholder="یادداشت جدید...">
+    <button class="btn pri" style="width:auto;padding:12px 18px" id="noteAdd">ثبت یادداشت</button>
   </div>
+  <div id="notesList"></div>
+</section>
 
-  <!-- TAB 3: POMODORO TIMER VIEW -->
-  <div id="tabPomo" class="tab-content">
-    <div class="glass pomo-wrapper">
-      <h2>🍅 پومودورو تمرکز عمیق</h2>
-      <p style="font-size: 0.8em; color: var(--text-sub); margin-top: 4px;">۲۵ دقیقه تمرکز خالص بدون حواس‌پرتی</p>
-      
-      <div class="timer-circle">
-        <div class="timer-display" id="pomoTimer">25:00</div>
-      </div>
-
-      <div class="pomo-controls">
-        <button class="btn-main" style="flex: initial; width: 120px;" onclick="togglePomoTimer()" id="pomoBtn">شروع تمرکز</button>
-        <button class="btn-secondary" style="flex: initial; width: 100px;" onclick="resetPomoTimer()">ریست</button>
-      </div>
-    </div>
+<section id="tab-settings" class="tab">
+  <div class="card"><h3 style="font-size:14px">⚙️ شخصی‌سازی و پوسته</h3><p style="font-size:11px;color:var(--muted);margin-top:4px">تم متحرک وب‌اپ</p></div>
+  <div class="themes" id="themes">
+    <button data-th="dark">🌌 پیش‌فرض دارک</button>
+    <button data-th="cyber">⚡ سایبرپانک</button>
+    <button data-th="amoled">🖤 مشکی AMOLED</button>
+    <button data-th="emerald">🌲 غار زمردی</button>
+    <button data-th="gold">👑 طلایی سلطنتی</button>
+    <button data-th="holo">💎 هولوگرافیک</button>
   </div>
+</section>
 
-  <!-- TAB NOTES: NOTEBOOK VIEW -->
-  <div id="tabNotes" class="tab-content">
-    <div class="glass" style="padding: 20px; margin-bottom: 20px;">
-      <h3 style="margin-bottom: 12px;"><i class="fas fa-sticky-note" style="color: var(--primary);"></i> دفترچه یادداشت سریع</h3>
-      <div class="form-group">
-        <textarea id="noteContentInput" rows="3" placeholder="یادداشت جدید خود را بنویسید..." style="width: 100%; border-radius: 12px; padding: 12px; background: rgba(0,0,0,0.3); border: 1px solid var(--card-border); color: var(--text); font-family: inherit; resize: vertical; outline: none;"></textarea>
-      </div>
-      <button class="btn-main" style="width: 100%;" onclick="saveNote()"><i class="fas fa-plus"></i> ثبت یادداشت</button>
-    </div>
-
-    <div id="notesContainer" class="task-list">
-      <div class="loader"><i class="fas fa-spinner fa-spin fa-2x"></i></div>
-    </div>
+<section id="tab-admin" class="tab">
+  <div class="card">
+    <h3 style="font-size:14px">🛡️ پنل مدیریت جامع</h3>
+    <p style="font-size:11px;color:var(--muted);margin-top:4px">مشاهده و نظارت بر فعالیت کاربران</p>
+    <button class="btn pri" id="adminBtn" style="margin-top:12px">🔄 بروزرسانی اطلاعات کاربران</button>
   </div>
-  
- <!-- TAB ADMIN: ADMIN PANEL -->
-<div id="tabAdmin" class="tab-content">
-  <div class="glass" style="padding: 20px;">
-    <h3>🛡️ پنل مدیریت جامع</h3>
-    <p style="color: var(--text-sub); font-size: 0.85em; margin-top: 5px;">مشاهده و نظارت بر فعالیت کاربران</p>
-    
-    <div style="margin-top: 15px; text-align: right;">
-      <button class="btn-main" onclick="loadAdminData()" style="width: 100%; margin-bottom: 15px;">🔄 بروزرسانی اطلاعات کاربران</button>
-      <div id="adminDataContainer" style="max-height: 400px; overflow-y: auto; text-align: right; font-size: 0.9em;">
-        <p style="text-align: center; color: var(--text-sub);">برای دریافت اطلاعات روی دکمه بالا کلیک کنید.</p>
-      </div>
+  <div id="adminList"><div class="empty">برای دریافت اطلاعات روی دکمه بالا کلیک کنید.</div></div>
+</section>
+
+</main>
+
+<button class="fab" id="fab">＋</button>
+
+<nav id="nav">
+  <button data-tab="tasks" class="on"><i>📋</i>وظایف</button>
+  <button data-tab="matrix"><i>📐</i>ماتریس</button>
+  <button data-tab="pomo"><i>⏱</i>پومودورو</button>
+  <button data-tab="notes"><i>📝</i>یادداشت‌ها</button>
+  <button data-tab="settings"><i>⚙️</i>تنظیمات</button>
+  <button data-tab="admin"><i>🛡</i>مدیریت</button>
+</nav>
+
+<div class="modal" id="modal">
+  <div class="msheet">
+    <h3 id="modalTitle">➕ افزودن کار جدید</h3>
+    <label>عنوان کار *</label><input id="fTitle">
+    <label>توضیحات</label><textarea id="fDesc" rows="2"></textarea>
+    <label>دسته‌بندی</label>
+    <select id="fCat"><option value="Personal">👤 شخصی</option><option value="Work">💼 کاری</option><option value="Study">📚 تحصیلی</option></select>
+    <label>اولویت</label>
+    <select id="fPri"><option value="High">🚨 ضروری</option><option value="Medium" selected>🟡 معمولی</option><option value="Low">🟢 کم</option></select>
+    <div class="mrow">
+      <button class="btn del" id="mCancel">انصراف</button>
+      <button class="btn ok" id="mSave">💾 ذخیره</button>
     </div>
   </div>
 </div>
-  
-  <!-- TAB 4: CUSTOMIZER & SETTINGS VIEW -->
-  <div id="tabSettings" class="tab-content">
-    <div class="glass" style="padding: 20px;">
-      <h3 style="margin-bottom: 16px;">⚙️ شخصی‌سازی و پوسته</h3>
 
-      <label style="font-size: 0.82em; color: var(--text-sub); font-weight: 700;">تم متحرک وب‌اپ</label>
-      <div class="theme-selector">
-        <div class="theme-card-option" onclick="selectTheme('default', this)">🌌 پیش‌فرض دارک</div>
-        <div class="theme-card-option" onclick="selectTheme('cyberpunk', this)">⚡ سایبرپانک</div>
-        <div class="theme-card-option" onclick="selectTheme('amoled', this)">🖤 مشکی AMOLED</div>
-        <div class="theme-card-option" onclick="selectTheme('emerald', this)">🌲 غار زمردی</div>
-        <div class="theme-card-option" onclick="selectTheme('gold', this)">👑 طلایی سلطنتی</div>
-        <div class="theme-card-option" onclick="selectTheme('hologram', this)">💎 هولوگرافیک</div>
-      </div>
-    </div>
-  </div>
+<div id="toast"><div id="toastMsg"></div></div>
 
-  <!-- FAB ADD BUTTON -->
-  <button class="fab" onclick="openTaskModal('add')"><i class="fas fa-plus"></i></button>
+<script>
+/* ✅ مهم‌ترین خط این فایل: سرور همیشه هوشمندانه پیدا می‌شود و دیگر خطای ارتباط نمی‌گیریم */
+const API = window.location.origin + "/api";
+const ADMIN_ID = 7681488759;
 
-  <!-- BOTTOM APP NAVIGATION BAR -->
-  <div class="bottom-nav">
-    <div class="nav-item active" onclick="switchTab('tabTasks', this)"><i class="fas fa-list-check"></i><span>وظایف</span></div>
-    <div class="nav-item" onclick="switchTab('tabMatrix', this)"><i class="fas fa-table-cells-large"></i><span>ماتریس</span></div>
-    <div class="nav-item" onclick="switchTab('tabPomo', this)"><i class="fas fa-stopwatch"></i><span>پومودورو</span></div>
-    <div class="nav-item" onclick="switchTab('tabNotes', this)"><i class="fas fa-sticky-note"></i><span>یادداشت‌ها</span></div>
-    <div class="nav-item" onclick="switchTab('tabSettings', this)"><i class="fas fa-sliders"></i><span>تنظیمات</span></div>
-    <div class="nav-item" id="adminTabNav" style="display:none;" onclick="switchTab('tabAdmin', this)">
-      <i class="fas fa-shield-halved"></i><span>مدیریت</span>
-    </div>
-  </div>
+let USER_ID = new URLSearchParams(location.search).get("user_id");
+if (!USER_ID && window.Telegram && Telegram.WebApp && Telegram.WebApp.initDataUnsafe && Telegram.WebApp.initDataUnsafe.user) {
+  USER_ID = Telegram.WebApp.initDataUnsafe.user.id;
+}
+if (window.Telegram && Telegram.WebApp) { try { Telegram.WebApp.ready(); Telegram.WebApp.expand(); } catch(e){} }
 
-  <!-- ADD / EDIT TASK MODAL SHEET -->
-  <div class="modal-backdrop" id="taskModal">
-    <div class="modal-sheet">
-      <h3 id="modalTitle" style="margin-bottom: 16px;">➕ افزودن کار جدید</h3>
-      <input type="hidden" id="mTaskId">
+let TASKS = [], FILTER = "all", SEARCH = "", EDIT_ID = null;
 
-      <div class="form-group">
-        <label>عنوان کار *</label>
-        <input type="text" id="mTitle" placeholder="عنوان...">
-      </div>
+function toast(msg){ const t = document.getElementById("toastMsg"); t.textContent = msg; t.style.opacity = 1; setTimeout(()=>t.style.opacity=0, 2200); }
 
-      <div class="form-group">
-        <label>توضیحات</label>
-        <textarea id="mDesc" rows="2" placeholder="جزئیات..."></textarea>
-      </div>
-
-      <div style="display: flex; gap: 10px;">
-        <div class="form-group" style="flex: 1;">
-          <label>دسته‌بندی</label>
-          <select id="mCat">
-            <option value="Personal">👤 شخصی</option>
-            <option value="Work">💼 کاری</option>
-            <option value="Study">📚 تحصیلی</option>
-          </select>
-        </div>
-        <div class="form-group" style="flex: 1;">
-          <label>اولویت</label>
-          <select id="mPri">
-            <option value="High">🚨 ضروری</option>
-            <option value="Medium" selected>🟡 معمولی</option>
-            <option value="Low">🟢 کم</option>
-          </select>
-        </div>
-      </div>
-
-      <div class="btn-group">
-        <button class="btn-secondary" onclick="closeTaskModal()">انصراف</button>
-        <button class="btn-main" onclick="saveTask()">💾 ذخیره</button>
-      </div>
-    </div>
-  </div>
-
-  <script>
-    const API_BASE = "https://bot-kqte.onrender.com/api";
-    const ADMIN_IDS = [7681488759];
-    let allTasks = [];
-    let currentFilter = 'All';
-    let searchQuery = '';
-
-    // TELEGRAM SDK SETUP
-    const tg = window.Telegram?.WebApp;
-    if (tg) {
-      tg.ready();
-      tg.expand();
-    }
-
-    // AUDIO SYNTHESIZER (WEB AUDIO API)
-    function playSyntheticSound() {
-      try {
-        const ctx = new (window.AudioContext || window.webkitAudioContext)();
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.type = 'sine';
-        osc.frequency.setValueAtTime(587.33, ctx.currentTime); // D5
-        osc.frequency.exponentialRampToValueAtTime(880, ctx.currentTime + 0.15); // A5
-        gain.gain.setValueAtTime(0.2, ctx.currentTime);
-        gain.gain.exponentialRampToValueAtTime(0.01, ctx.currentTime + 0.15);
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.start();
-        osc.stop(ctx.currentTime + 0.15);
-      } catch(e) {}
-    }
-
-    // RELIABLE TELEGRAM USER ID EXTRACTOR (Fixed & Secure)
-function getReliableUserId() {
-  if (tg?.initDataUnsafe?.user?.id) {
-    localStorage.setItem('tg_user_id', tg.initDataUnsafe.user.id);
-    return tg.initDataUnsafe.user.id;
-  }
-  const urlParams = new URLSearchParams(window.location.search);
-  let uid = urlParams.get('user_id');
-  if (uid) {
-    localStorage.setItem('tg_user_id', uid);
-    return uid;
-  }
-  try {
-    const hash = window.location.hash.substring(1);
-    if (hash) {
-      const userStr = new URLSearchParams(new URLSearchParams(hash).get('tgWebAppData') || hash).get('user');
-      if (userStr) {
-        const parsedId = JSON.parse(decodeURIComponent(userStr))?.id;
-        if (parsedId) {
-          localStorage.setItem('tg_user_id', parsedId);
-          return parsedId;
-        }
-      }
-    }
-  } catch (e) {}
-  return localStorage.getItem('tg_user_id') || '7681488759';
+async function api(path, opts={}){
+  const o = Object.assign({ headers: {"Content-Type":"application/json"} }, opts);
+  const r = await fetch(API + path, o);
+  if (!r.ok) throw new Error("HTTP " + r.status);
+  return r.json();
 }
 
-const userId = getReliableUserId();
+/* ---------- پروفایل ---------- */
+function renderProfile(p){
+  document.getElementById("lvlText").textContent = (p.badge || "🌱 تازه کار") + " (Level " + p.level + ")";
+  document.getElementById("xpText").textContent = (p.xp % 100) + " / 100 XP";
+  document.getElementById("xpBar").style.width = (p.xp % 100) + "%";
+}
 
-    // TAB NAVIGATION
-    function switchTab(tabId, el) {
-      tg?.HapticFeedback?.selectionChanged();
-      document.querySelectorAll('.tab-content').forEach(t => t.classList.remove('active'));
-      document.querySelectorAll('.nav-item').forEach(n => n.classList.remove('active'));
-      document.getElementById(tabId).classList.add('active');
-      el.classList.add('active');
-      if (tabId === 'tabMatrix') renderMatrix();
-      if (tabId === 'tabNotes') fetchNotes();
-    }
+/* ---------- کارها ---------- */
+function renderTasks(){
+  const box = document.getElementById("tasksList");
+  let list = TASKS.filter(t => FILTER === "all" || t.category === FILTER);
+  if (SEARCH) list = list.filter(t => (t.title + " " + (t.description||"")).includes(SEARCH));
+  if (!list.length){ box.innerHTML = '<div class="empty">🎉 کاری نیست! با دکمه ＋ کار جدید بساز.</div>'; return; }
+  box.innerHTML = list.map(t => {
+    const cat = {Personal:"👤 شخصی",Work:"💼 کاری",Study:"📚 تحصیلی"}[t.category] || t.category;
+    const pri = {High:"🚨 ضروری",Medium:"🟡 معمولی",Low:"🟢 کم"}[t.priority] || t.priority;
+    const subs = (t.subtasks && t.subtasks.length) ? '<div class="subs">' + t.subtasks.map(s=>(s.is_done?"✅":"▫️")+" "+s.title).join("<br>") + '</div>' : "";
+    return '<div class="task"><h3>'+t.title+'</h3><div class="meta"><span class="tag">'+cat+'</span><span class="tag">'+pri+'</span>'+(t.due_date?'<span class="tag">⏰ '+t.due_date+'</span>':'')+'</div>'+(t.description?'<div class="desc">'+t.description+'</div>':'')+subs+
+    '<div class="actions"><button class="btn ok" onclick="doneTask('+t.id+')">✅ انجام شد</button><button class="btn ed" onclick="openEdit('+t.id+')">✏️</button><button class="btn del" onclick="delTask('+t.id+')">🗑</button></div></div>';
+  }).join("");
+}
 
-    // FETCH STATS
-    async function fetchStats() {
-      if (!userId) return;
-      try {
-        const res = await fetch(`${API_BASE}/stats?user_id=${userId}`);
-        const data = await res.json();
-        if (data.profile) {
-          const p = data.profile;
-          document.getElementById('uBadge').innerText = `${p.badge} (Level ${p.level})`;
-          const progress = p.xp % 100;
-          document.getElementById('xpFill').style.width = `${progress}%`;
-          document.getElementById('xpText').innerText = `${progress} / 100 XP (کل: ${p.xp})`;
-        }
-      } catch(e) {}
-    }
-
-    // FETCH TASKS
-    async function fetchTasks() {
-      const container = document.getElementById('taskListContainer');
-      if (!userId) {
-        container.innerHTML = `<div class="loader" style="color:var(--danger);">⚠️ شناسه کاربر یافت نشد!</div>`;
-        return;
-      }
-
-      try {
-        const res = await fetch(`${API_BASE}/tasks?user_id=${userId}`);
-        const data = await res.json();
-        allTasks = data.tasks || [];
-        renderTasks();
-      } catch (err) {
-        container.innerHTML = '<div class="loader" style="color:var(--danger);">⚠️ خطا در دریافت اطلاعات از سرور</div>';
-      }
-    }
-
-    // --- NOTES MANAGEMENT ---
-    async function fetchNotes() {
-      const container = document.getElementById('notesContainer');
-      if (!userId) return;
-
-      try {
-        const res = await fetch(`${API_BASE}/notes?user_id=${userId}`);
-        const data = await res.json();
-        if (data.status === "success") {
-          if (!data.notes || data.notes.length === 0) {
-            container.innerHTML = '<div class="loader">📝 هیچ یادداشتی ثبت نشده است.</div>';
-            return;
-          }
-          let html = '';
-          data.notes.forEach(n => {
-            html += `
-              <div class="glass task-card" style="margin-bottom: 10px;">
-                <div style="white-space: pre-wrap; font-size: 0.9em; line-height: 1.6; margin-bottom: 10px;">${n.content}</div>
-                <div class="card-footer" style="justify-content: space-between; align-items: center;">
-                  <span style="font-size: 0.75em; color: var(--text-sub);">🕒 ${n.created_at}</span>
-                  <button class="btn-action delete" onclick="deleteNote(${n.id})"><i class="fas fa-trash"></i> حذف</button>
-                </div>
-              </div>
-            `;
-          });
-          container.innerHTML = html;
-        }
-      } catch (e) {
-        container.innerHTML = '<div class="loader" style="color:var(--danger);">⚠️ خطا در دریافت یادداشت‌ها</div>';
-      }
-    }
-
-    async function saveNote() {
-      const input = document.getElementById('noteContentInput');
-      const content = input.value.trim();
-      if (!content) return alert("لطفاً متنی برای یادداشت بنویسید!");
-
-      try {
-        const res = await fetch(`${API_BASE}/notes`, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ user_id: parseInt(userId), content: content })
-        });
-        const data = await res.json();
-        if (data.status === "success") {
-          input.value = '';
-          tg?.HapticFeedback?.notificationOccurred('success');
-          fetchNotes();
-        }
-      } catch(e) {
-        alert("خطا در ثبت یادداشت!");
-      }
-    }
-
-    async function deleteNote(id) {
-      if (!confirm("آیا از حذف این یادداشت مطمئن هستید؟")) return;
-      try {
-        await fetch(`${API_BASE}/notes/${id}?user_id=${userId}`, { method: 'DELETE' });
-        tg?.HapticFeedback?.impactOccurred('heavy');
-        fetchNotes();
-      } catch(e) {
-        alert("خطا در حذف یادداشت!");
-      }
-    }
-
-    function setFilter(filter, el) {
-      currentFilter = filter;
-      document.querySelectorAll('.pill-btn').forEach(b => b.classList.remove('active'));
-      el.classList.add('active');
-      renderTasks();
-    }
-
-    function onSearchChange() {
-      searchQuery = document.getElementById('searchInput').value.toLowerCase().trim();
-      renderTasks();
-    }
-
-    function renderTasks() {
-      const container = document.getElementById('taskListContainer');
-      let filtered = allTasks;
-
-      if (currentFilter !== 'All') filtered = filtered.filter(t => t.category === currentFilter);
-      if (searchQuery) filtered = filtered.filter(t => t.title.toLowerCase().includes(searchQuery));
-
-      if (filtered.length === 0) {
-        container.innerHTML = '<div class="loader">🎉 کاری وجود ندارد!</div>';
-        return;
-      }
-
-      const catMap = { "Personal": "شخصی", "Work": "کاری", "Study": "تحصیلی" };
-      let html = '';
-      filtered.forEach(t => {
-        const tJson = encodeURIComponent(JSON.stringify(t));
-        html += `
-          <div class="glass task-card" id="task-${t.id}">
-            <div class="task-title">${t.title}</div>
-            ${t.description ? `<div class="task-desc">${t.description}</div>` : ''}
-            <div class="tags-group">
-              <span class="badge">📁 ${catMap[t.category] || t.category}</span>
-              ${t.is_urgent ? `<span class="badge urgent">🔥 فوری</span>` : ''}
-              ${t.is_important ? `<span class="badge important">⭐ مهم</span>` : ''}
-            </div>
-            <div class="card-footer">
-              <button class="btn-action complete" onclick="markDone(${t.id})"><i class="fas fa-check"></i> انجام شد</button>
-              <button class="btn-action" onclick="openTaskModal('edit', '${tJson}')"><i class="fas fa-pen"></i></button>
-              <button class="btn-action delete" onclick="deleteTask(${t.id})"><i class="fas fa-trash"></i></button>
-            </div>
-          </div>
-        `;
-      });
-      container.innerHTML = html;
-    }
-
-    function renderMatrix() {
-      document.getElementById('mQ1').innerHTML = allTasks.filter(t => t.is_urgent && t.is_important).map(t => `<div style="font-size:0.8em; padding:4px 0;">• ${t.title}</div>`).join('') || '<div style="font-size:0.7em; color:var(--text-sub);">خالی</div>';
-      document.getElementById('mQ2').innerHTML = allTasks.filter(t => !t.is_urgent && t.is_important).map(t => `<div style="font-size:0.8em; padding:4px 0;">• ${t.title}</div>`).join('') || '<div style="font-size:0.7em; color:var(--text-sub);">خالی</div>';
-      document.getElementById('mQ3').innerHTML = allTasks.filter(t => t.is_urgent && !t.is_important).map(t => `<div style="font-size:0.8em; padding:4px 0;">• ${t.title}</div>`).join('') || '<div style="font-size:0.7em; color:var(--text-sub);">خالی</div>';
-      document.getElementById('mQ4').innerHTML = allTasks.filter(t => !t.is_urgent && !t.is_important).map(t => `<div style="font-size:0.8em; padding:4px 0;">• ${t.title}</div>`).join('') || '<div style="font-size:0.7em; color:var(--text-sub);">خالی</div>';
-    }
-
-    async function markDone(id) {
-      tg?.HapticFeedback?.notificationOccurred('success');
-      playSyntheticSound();
-      try { confetti({ particleCount: 70, spread: 60, origin: { y: 0.8 } }); } catch(e) {}
-
-      const el = document.getElementById(`task-${id}`);
-      if (el) el.style.opacity = '0.3';
-
-      try {
-        await fetch(`${API_BASE}/tasks/${id}/done`, { method: 'POST' });
-        fetchStats();
-        fetchTasks();
-      } catch(e) {}
-    }
-
-    async function deleteTask(id) {
-      if (!confirm("آیا از حذف مطمئن هستید؟")) return;
-      tg?.HapticFeedback?.impactOccurred('heavy');
-      await fetch(`${API_BASE}/tasks/${id}`, { method: 'DELETE' });
-      fetchTasks();
-    }
-
-    function openTaskModal(mode, tJson = null) {
-      document.getElementById('taskModal').style.display = 'flex';
-      if (mode === 'add') {
-        document.getElementById('mTaskId').value = '';
-        document.getElementById('mTitle').value = '';
-        document.getElementById('mDesc').value = '';
-      } else {
-        const t = JSON.parse(decodeURIComponent(tJson));
-        document.getElementById('mTaskId').value = t.id;
-        document.getElementById('mTitle').value = t.title;
-        document.getElementById('mDesc').value = t.description || '';
-        document.getElementById('mCat').value = t.category;
-        document.getElementById('mPri').value = t.priority;
-      }
-    }
-
-    function closeTaskModal() { document.getElementById('taskModal').style.display = 'none'; }
-
-    async function saveTask() {
-      const id = document.getElementById('mTaskId').value;
-      const payload = {
-        user_id: userId,
-        title: document.getElementById('mTitle').value,
-        description: document.getElementById('mDesc').value,
-        category: document.getElementById('mCat').value,
-        priority: document.getElementById('mPri').value
-      };
-
-      if (!payload.title) return alert("عنوان را وارد کنید!");
-      closeTaskModal();
-
-      if (id) {
-        await fetch(`${API_BASE}/tasks`, { method: 'PUT', headers: {'Content-Type': 'application/json'}, body: JSON.stringify({ ...payload, task_id: parseInt(id) }) });
-      } else {
-        await fetch(`${API_BASE}/tasks`, { method: 'POST', headers: {'Content-Type': 'application/json'}, body: JSON.stringify(payload) });
-      }
-      fetchTasks();
-    }
-
-    // LIVE POMODORO TIMER JS
-    let pomoTime = 1500;
-    let pomoInterval = null;
-
-    function togglePomoTimer() {
-      const btn = document.getElementById('pomoBtn');
-      if (pomoInterval) {
-        clearInterval(pomoInterval);
-        pomoInterval = null;
-        btn.innerText = 'ادامه تمرکز';
-      } else {
-        btn.innerText = 'توقف';
-        pomoInterval = setInterval(() => {
-          if (pomoTime > 0) {
-            pomoTime--;
-            const m = Math.floor(pomoTime / 60).toString().padStart(2, '0');
-            const s = (pomoTime % 60).toString().padStart(2, '0');
-            document.getElementById('pomoTimer').innerText = `${m}:${s}`;
-          } else {
-            clearInterval(pomoInterval);
-            playSyntheticSound();
-            alert("زمان تمرکز به پایان رسید! عالی بود 👏");
-          }
-        }, 1000);
-      }
-    }
-
-    function resetPomoTimer() {
-      clearInterval(pomoInterval);
-      pomoInterval = null;
-      pomoTime = 1500;
-      document.getElementById('pomoTimer').innerText = '25:00';
-      document.getElementById('pomoBtn').innerText = 'شروع تمرکز';
-    }
-
-    // THEME SWITCHER
-    function selectTheme(name, el) {
-      document.body.className = '';
-      if (name !== 'default') document.body.classList.add(`theme-${name}`);
-      localStorage.setItem('app_theme', name);
-      if (el) {
-        document.querySelectorAll('.theme-card-option').forEach(c => c.classList.remove('selected'));
-        el.classList.add('selected');
-      }
-    }
-
-    const savedTheme = localStorage.getItem('app_theme') || 'default';
-    selectTheme(savedTheme, null);
-
-    if (tg?.initDataUnsafe?.user?.first_name) {
-      document.getElementById('uName').innerText = `کارهای ${tg.initDataUnsafe.user.first_name}`;
-    }
-
-    fetchStats();
-    fetchTasks();
-    fetchNotes();
-    // بررسی اینکه آیا کاربر ادمین است یا خیر
-function checkAdminAccess() {
-  if (ADMIN_IDS.includes(parseInt(userId))) {
-    document.getElementById('adminTabNav').style.display = 'flex';
+async function loadAll(){
+  if (!USER_ID){ document.getElementById("tasksList").innerHTML = '<div class="err">⚠️ لطفاً وب‌اپ را از داخل ربات تلگرام باز کنید.</div>'; return; }
+  try{
+    const [t, s] = await Promise.all([ api("/tasks?user_id="+USER_ID), api("/stats?user_id="+USER_ID) ]);
+    TASKS = t.tasks || [];
+    renderProfile(s.profile || {});
+    renderTasks(); renderMatrix();
+  }catch(e){
+    document.getElementById("tasksList").innerHTML = '<div class="err">⚠️ خطا در دریافت اطلاعات از سرور</div>';
   }
 }
-checkAdminAccess();
 
-// تابع بارگذاری اطلاعات ادمین (نسخه اصلاح شده و ایمن)
-async function loadAdminData() {
-  const container = document.getElementById('adminDataContainer');
-  container.innerHTML = '<p style="text-align: center;">در حال بارگذاری اطلاعات...</p>';
-  
-  // استفاده از آیدی تلگرام یا به طور پیش‌فرض آیدی ادمین خودتان
-  const currentUserId = window.Telegram?.WebApp?.initDataUnsafe?.user?.id || userId || '7681488759';
-  
-  try {
-    const res = await fetch(`${API_BASE}/admin/all-data?user_id=${currentUserId}`);
-    const data = await res.json();
-    
-    if (!data.success) {
-      container.innerHTML = `<p style="color: #ff5555; text-align: center;">${data.message || 'دسترسی غیرمجاز!'}</p>`;
-      return;
-    }
-    
-    let html = '';
-    if (data.users && data.users.length > 0) {
-      data.users.forEach(u => {
-        html += `
-          <div style="background: rgba(255,255,255,0.05); padding: 12px; border-radius: 10px; margin-bottom: 10px;">
-            <b style="color: var(--primary);">کاربر: ${u.name || 'بدون نام'} (ID: ${u.telegram_id})</b>
-            <div style="margin-top: 5px; font-size: 0.85em; color: var(--text-sub);">
-              <p>📌 <b>وظایف:</b> ${u.tasks ? u.tasks.length : 0} مورد</p>
-              <p>📝 <b>یادداشت‌ها:</b> ${u.notes ? u.notes.map(n => n.content || n.text).join(' | ') : 'ندارد'}</p>
-            </div>
-          </div>
-        `;
-      });
-    } else {
-      html = '<p style="text-align: center; color: var(--text-sub);">هیچ کاربری در دیتابیس یافت نشد.</p>';
-    }
-    
-    container.innerHTML = html;
-  } catch (err) {
-    container.innerHTML = `<p style="color: #ff5555; text-align: center;">خطا در ارتباط با سرور: ${err.message}</p>`;
-  }
+async function doneTask(id){
+  try{ const r = await api("/tasks/"+id+"/done", {method:"POST"}); toast(r.leveled_up ? "🎉 ارتقاء سطح!" : "✅ +20 XP"); loadAll(); }catch(e){ toast("❌ خطا"); }
 }
-    
-  </script>
+async function delTask(id){
+  if (!confirm("حذف شود؟")) return;
+  try{ await api("/tasks/"+id, {method:"DELETE"}); toast("🗑 حذف شد"); loadAll(); }catch(e){ toast("❌ خطا"); }
+}
+function openEdit(id){
+  const t = TASKS.find(x=>x.id===id); if(!t) return;
+  EDIT_ID = id;
+  document.getElementById("modalTitle").textContent = "✏️ ویرایش کار";
+  document.getElementById("fTitle").value = t.title;
+  document.getElementById("fDesc").value = t.description || "";
+  document.getElementById("fCat").value = t.category || "Personal";
+  document.getElementById("fPri").value = t.priority || "Medium";
+  document.getElementById("modal").classList.add("open");
+}
+
+/* ---------- ماتریس ---------- */
+function renderMatrix(){
+  const g = (u,i) => TASKS.filter(t=>t.is_urgent==u&&t.is_important==i);
+  const fill = (id,arr)=>{ document.getElementById(id).innerHTML = arr.length? arr.map(t=>"<li>• "+t.title+"</li>").join("") : "<li>خالی</li>"; };
+  fill("q1", g(1,1)); fill("q2", g(0,1)); fill("q3", g(1,0)); fill("q4", g(0,0));
+}
+
+/* ---------- یادداشت‌ها ---------- */
+async function loadNotes(){
+  if (!USER_ID) return;
+  try{
+    const r = await api("/notes?user_id="+USER_ID);
+    const box = document.getElementById("notesList");
+    if (!(r.notes||[]).length){ box.innerHTML = '<div class="empty">یادداشتی نیست.</div>'; return; }
+    box.innerHTML = r.notes.map(n=>'<div class="note"><p>'+n.content+'<small>'+ (n.created_at||"").slice(0,10) +'</small></p><button onclick="delNote('+n.id+')">🗑</button></div>').join("");
+  }catch(e){}
+}
+async function delNote(id){
+  try{ await api("/notes/"+id+"?user_id="+USER_ID, {method:"DELETE"}); toast("🗑 حذف شد"); loadNotes(); }catch(e){ toast("❌ خطا"); }
+}
+
+/* ---------- پومودورو ---------- */
+let pSec = 1500, pInt = null;
+function pShow(){ const m=String(Math.floor(pSec/60)).padStart(2,"0"), s=String(pSec%60).padStart(2,"0"); document.getElementById("timer").textContent=m+":"+s; }
+document.getElementById("pomoStart").onclick = ()=>{
+  if (pInt){ clearInterval(pInt); pInt=null; document.getElementById("pomoStart").textContent="ادامه تمرکز"; return; }
+  document.getElementById("pomoStart").textContent="توقف";
+  pInt = setInterval(()=>{ pSec--; pShow();
+    if (pSec<=0){ clearInterval(pInt); pInt=null; pSec=1500; pShow(); toast("🎉 جلسه پومودورو تمام شد! ☕"); try{navigator.vibrate&&navigator.vibrate(300);}catch(e){} }
+  },1000);
+};
+document.getElementById("pomoReset").onclick = ()=>{ clearInterval(pInt); pInt=null; pSec=1500; pShow(); document.getElementById("pomoStart").textContent="شروع تمرکز"; };
+
+/* ---------- ادمین ---------- */
+document.getElementById("adminBtn").onclick = async ()=>{
+  const box = document.getElementById("adminList");
+  box.innerHTML = '<div class="empty">در حال دریافت...</div>';
+  try{
+    const r = await api("/admin/all-data?user_id="+USER_ID);
+    if (!r.success){ box.innerHTML = '<div class="err">⛔ '+ (r.message||"دسترسی غیرمجاز!") +'</div>'; return; }
+    box.innerHTML = (r.users||[]).map(u=>'<div class="adminuser"><b>👤 '+u.name+'</b><span>ID: '+u.telegram_id+' | کارها: '+(u.tasks||[]).length+' | یادداشت‌ها: '+(u.notes||[]).length+'</span></div>').join("") || '<div class="empty">کاربری نیست.</div>';
+  }catch(e){ box.innerHTML = '<div class="err">⚠️ خطا در ارتباط با سرور</div>'; }
+};
+
+/* ---------- ناوبری و تم ---------- */
+document.getElementById("nav").addEventListener("click", e=>{
+  const b = e.target.closest("button"); if(!b) return;
+  document.querySelectorAll("nav button").forEach(x=>x.classList.remove("on")); b.classList.add("on");
+  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));
+  document.getElementById("tab-"+b.dataset.tab).classList.add("active");
+  if (b.dataset.tab==="notes") loadNotes();
+});
+document.getElementById("chips").addEventListener("click", e=>{
+  const c = e.target.closest(".chip"); if(!c) return;
+  document.querySelectorAll(".chip").forEach(x=>x.classList.remove("on")); c.classList.add("on");
+  FILTER = c.dataset.cat; renderTasks();
+});
+document.getElementById("searchBox").oninput = e=>{ SEARCH = e.target.value.trim(); renderTasks(); };
+
+const savedTh = localStorage.getItem("theme") || "dark";
+document.body.dataset.theme = savedTh;
+document.querySelectorAll("#themes button").forEach(b=>{
+  if (b.dataset.th===savedTh) b.classList.add("on");
+  b.onclick = ()=>{ document.body.dataset.theme = b.dataset.th; localStorage.setItem("theme", b.dataset.th);
+    document.querySelectorAll("#themes button").forEach(x=>x.classList.remove("on")); b.classList.add("on"); };
+});
+
+/* ---------- مودال افزودن/ویرایش ---------- */
+document.getElementById("fab").onclick = ()=>{
+  EDIT_ID = null;
+  document.getElementById("modalTitle").textContent = "➕ افزودن کار جدید";
+  document.getElementById("fTitle").value = ""; document.getElementById("fDesc").value = "";
+  document.getElementById("fCat").value = "Personal"; document.getElementById("fPri").value = "Medium";
+  document.getElementById("modal").classList.add("open");
+};
+document.getElementById("mCancel").onclick = ()=> document.getElementById("modal").classList.remove("open");
+document.getElementById("mSave").onclick = async ()=>{
+  const title = document.getElementById("fTitle").value.trim();
+  if (!title){ toast("⚠️ عنوان الزامی است"); return; }
+  const body = { user_id: USER_ID, title, description: document.getElementById("fDesc").value.trim(),
+    category: document.getElementById("fCat").value, priority: document.getElementById("fPri").value };
+  try{
+    if (EDIT_ID){ body.task_id = EDIT_ID; await api("/tasks", {method:"PUT", body: JSON.stringify(body)}); toast("✅ ویرایش شد"); }
+    else { await api("/tasks", {method:"POST", body: JSON.stringify(body)}); toast("✅ ثبت شد"); }
+    document.getElementById("modal").classList.remove("open"); loadAll();
+  }catch(e){ toast("❌ خطا"); }
+};
+
+pShow(); loadAll();
+</script>
 </body>
 </html>
